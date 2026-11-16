@@ -296,6 +296,7 @@ const Tree = {
         if (n.twin_of) this.centerOn(n.twin_of);
       },
       ondblclick: () => this.onOpen && this.onOpen(n.person_id),
+      oncontextmenu: (e) => this.onContext && this.onContext(e, n.person_id),
     });
     g.append(s("title", {}, n.twin_of
       ? `${n.label} — ikiz kart: bu kişi ağaçta başka bir kolda da var (akraba evliliği). Tıklayınca asıl karta gidilir.`

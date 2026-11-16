@@ -159,6 +159,17 @@ fn create_person(state: State<AppState>, input: PersonInput, relation: Option<Ne
     with_db(&state, |c| family::create_person(c, &input, relation))
 }
 
+/// Açık ağacın başlangıç kişisi (açılışta ağacın kökü)
+#[tauri::command]
+fn get_home(state: State<AppState>) -> Res<Option<i64>> {
+    with_db(&state, db::home_person)
+}
+
+#[tauri::command]
+fn set_home(state: State<AppState>, id: i64) -> Res<()> {
+    with_db(&state, |c| db::set_home_person(c, id))
+}
+
 /// Açık ağaçta en üst kuşağın baba/ana adlarından eksik ebeveynleri ekler.
 #[tauri::command]
 fn complete_top_parents(state: State<AppState>) -> Res<usize> {
@@ -424,6 +435,8 @@ fn main() {
             delete_tree,
             save_export,
             complete_top_parents,
+            get_home,
+            set_home,
         ])
         .run(context)
         .expect("FamilyTree başlatılamadı");

@@ -258,6 +258,10 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         crate::family::complete_top_parents(conn)?;
         conn.execute_batch("PRAGMA user_version = 2;")?;
     }
+    if v < 3 {
+        // 3: ağaç ayarları (başlangıç kişisi)
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL); PRAGMA user_version = 3;")?;
+    }
     Ok(())
 }
 
@@ -373,6 +377,23 @@ fn row_to_person(r: &rusqlite::Row) -> rusqlite::Result<Person> {
         placeholder: r.get(16)?,
         manual_fields: serde_json::from_str(&manual).unwrap_or_default(),
     })
+}
+
+/// Ağacın başlangıç kişisi (açılışta ağacın kökü); kişi artık yoksa `None`.
+pub fn home_person(conn: &Connection) -> Result<Option<i64>> {
+    let v: Option<String> =
+        conn.query_row("SELECT value FROM meta WHERE key = 'home_person'", [], |r| r.get(0)).optional()?;
+    let Some(id) = v.and_then(|x| x.parse::<i64>().ok()) else { return Ok(None) };
+    Ok(get_person(conn, id).ok().map(|p| p.id))
+}
+
+pub fn set_home_person(conn: &Connection, id: i64) -> Result<()> {
+    get_person(conn, id)?;
+    conn.execute(
+        "INSERT INTO meta (key, value) VALUES ('home_person', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [id.to_string()],
+    )?;
+    Ok(())
 }
 
 pub fn get_person(conn: &Connection, id: i64) -> Result<Person> {
@@ -595,7 +616,7 @@ mod tests {
         migrate(&c).unwrap();
         assert_eq!(get_person(&c, id).unwrap().info.given_name, "EMRE");
         let v: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 2);
+        assert_eq!(v, 3);
     }
 
     /// Şema 1 → 2: önceki sürümle içe aktarılmış ağaçlarda en üst kuşak bir kez tamamlanır.
@@ -615,7 +636,7 @@ mod tests {
         }
         let c = open(&path).unwrap();
         let v: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 2);
+        assert_eq!(v, 3);
         assert_eq!(list_persons(&c).unwrap().len(), 3, "Ömer ve Şerife eklendi");
         // Kullanıcı yer tutucuyu silse bile tekrar açılışta yeniden eklenmez
         let omer = list_persons(&c).unwrap().into_iter().find(|x| x.info.given_name == "ÖMER").unwrap().id;
@@ -623,6 +644,22 @@ mod tests {
         drop(c);
         let c = open(&path).unwrap();
         assert_eq!(list_persons(&c).unwrap().len(), 2);
+    }
+
+    /// Ağacın başlangıç kişisi dosyada saklanır; kişi silinirse boşalır.
+    #[test]
+    fn home_person_roundtrip() {
+        let c = db();
+        assert_eq!(home_person(&c).unwrap(), None);
+        let a = insert_person(&c, &p("EMRE", Sex::Male), false).unwrap();
+        let b = insert_person(&c, &p("SU", Sex::Female), false).unwrap();
+        set_home_person(&c, a).unwrap();
+        assert_eq!(home_person(&c).unwrap(), Some(a));
+        set_home_person(&c, b).unwrap();
+        assert_eq!(home_person(&c).unwrap(), Some(b));
+        assert!(matches!(set_home_person(&c, 9999), Err(Error::NotFound(9999))));
+        delete_person(&c, b).unwrap();
+        assert_eq!(home_person(&c).unwrap(), None, "silinen kişi başlangıç olamaz");
     }
 
     #[test]

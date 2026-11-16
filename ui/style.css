@@ -398,3 +398,22 @@ dialog .settings { display: flex; flex-direction: column; gap: 12px; min-width: 
 .theme-swatch.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .export-options { display: flex; flex-direction: column; gap: 8px; min-width: 340px; }
 .export-options label { display: flex; gap: 8px; align-items: center; }
+
+/* Sağ tık menüsü */
+.ctx-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.ctx-menu button { border: none; background: transparent; text-align: left; padding: 7px 10px; border-radius: 6px; }
+.ctx-menu button:hover { background: var(--accent); color: var(--accent-text); }
+.ctx-title { font-weight: 700; padding: 4px 10px 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.ctx-note { color: var(--muted); padding: 6px 10px; }
+.home-badge { color: var(--accent); font-weight: 600; }

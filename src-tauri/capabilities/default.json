@@ -34,6 +34,8 @@
     "allow-rename-tree",
     "allow-delete-tree",
     "allow-save-export",
-    "allow-complete-top-parents"
+    "allow-complete-top-parents",
+    "allow-get-home",
+    "allow-set-home"
   ]
 }

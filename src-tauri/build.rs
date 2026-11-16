@@ -31,6 +31,8 @@ const COMMANDS: &[&str] = &[
     "delete_tree",
     "save_export",
     "complete_top_parents",
+    "get_home",
+    "set_home",
 ];
 
 fn main() {

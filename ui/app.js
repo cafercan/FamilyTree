@@ -29,6 +29,7 @@ async function afterTreeChange(list) {
   renderTrees(list);
   state.selected = null;
   state.root = null;
+  state.home = await call("get_home");
   state.relA = null;
   state.relB = null;
   state.search = "";
@@ -81,7 +82,11 @@ async function refresh(keepView) {
   state.byId = new Map(state.persons.map((p) => [p.id, p]));
   if (state.selected !== null && !state.byId.has(state.selected)) state.selected = null;
   if (state.root !== null && state.root !== undefined && !state.byId.has(state.root)) state.root = null;
-  if (state.selected === null && state.persons.length) state.selected = state.persons.find((p) => !p.placeholder)?.id ?? state.persons[0].id;
+  if (state.home !== null && state.home !== undefined && !state.byId.has(state.home)) state.home = null;
+  if (state.selected === null && state.persons.length) {
+    state.selected = state.home ?? state.persons.find((p) => !p.placeholder)?.id ?? state.persons[0].id;
+    state.root = state.selected;
+  }
   renderList();
   renderRelationSelects();
   await Promise.all([renderDuplicates(), renderConsanguinity()]);
@@ -101,7 +106,8 @@ function renderList() {
         class: p.id === state.selected ? "selected" : "",
         title: text,
         onclick: () => select(p.id),
-      }, fullName(p) + deathMark(p.alive),
+        oncontextmenu: (e) => personMenu(e, p.id),
+      }, (p.id === state.home ? "🏠 " : "") + fullName(p) + deathMark(p.alive),
       h("small", {}, [yearsOf(p), p.placeholder ? "yer tutucu" : "", p.province_district].filter(Boolean).join(" · "))),
     );
   }
@@ -249,6 +255,55 @@ function setTab(tab) {
   render();
 }
 
+async function setHome(id) {
+  await call("set_home", { id });
+  state.home = id;
+  renderList();
+  await renderDetail();
+  toast(`${fullName(state.byId.get(id) || {})} başlangıç kişisi oldu: program ve bu ağaç her açıldığında ondan başlar`);
+}
+
+/** Kişi üzerinde sağ tık menüsü (listede ve ağaçta) */
+function personMenu(e, id) {
+  e.preventDefault();
+  closeMenu();
+  const p = state.byId.get(id);
+  if (!p) return;
+  const item = (label, fn) => h("button", {
+    onclick: () => {
+      closeMenu();
+      fn();
+    },
+  }, label);
+  const menu = h("div", { id: "ctx-menu", class: "ctx-menu", role: "menu" },
+    h("div", { class: "ctx-title" }, fullName(p)),
+    id === state.home
+      ? h("div", { class: "ctx-note" }, "🏠 Başlangıç kişisi")
+      : item("🏠 Başlangıç kişisi olarak ata", () => setHome(id)),
+    item("Ağacı bu kişiden başlat", () => select(id)),
+    item("Bilgilerini göster", () => selectInTree(id)),
+    item("Akrabalığını bul…", () => {
+      state.relA = id;
+      if (state.relB === id) state.relB = null;
+      setTab("relation");
+      renderRelationSelects();
+    }),
+    item("Düzenle…", async () => {
+      const input = await personForm(`${fullName(p)} — düzenle`, p);
+      if (!input) return;
+      await call("update_person", { id, input });
+      await refresh(true);
+    }));
+  document.body.append(menu);
+  const r = menu.getBoundingClientRect();
+  menu.style.left = Math.min(e.clientX, window.innerWidth - r.width - 8) + "px";
+  menu.style.top = Math.min(e.clientY, window.innerHeight - r.height - 8) + "px";
+}
+
+function closeMenu() {
+  document.getElementById("ctx-menu")?.remove();
+}
+
 /** Listeden ya da bağlantıdan seçim: kişi hem seçilir hem ağacın kökü olur. */
 async function select(id) {
   state.selected = id;
@@ -350,7 +405,10 @@ async function renderDetail() {
       h("h2", {}, fullName(p) + deathMark(p.alive)),
       (state.root ?? state.selected) !== id && state.tab !== "relation"
         ? h("button", { onclick: () => select(id), title: "Ağacı bu kişiden yeniden çiz (ya da kişiye çift tıklayın)" }, "Ağacı bu kişiden başlat")
-        : null),
+        : null,
+      id === state.home
+        ? h("span", { class: "home-badge", title: "Program ve bu ağaç her açıldığında bu kişiden başlar" }, "🏠 Başlangıç kişisi")
+        : h("button", { onclick: () => setHome(id), title: "Program ve bu ağaç her açıldığında bu kişiden başlasın" }, "🏠 Başlangıç kişisi yap")),
     p.placeholder ? h("p", { class: "warn" }, "Yer tutucu: bu kişinin PDF'te kendi satırı yok; bilgilerini Düzenle ile girebilirsiniz.") : null,
     info.length
       ? h("dl", { class: "info" }, info.map(([k, v]) =>
@@ -448,6 +506,14 @@ function wire() {
   };
   $("btn-tree-more").onclick = treeMenu;
   // Ağaçta tek tıklama bilgileri gösterir, çift tıklama ağacı o kişiden başlatır
+  Tree.onContext = (e, id) => personMenu(e, id);
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#ctx-menu")) closeMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+  window.addEventListener("blur", closeMenu);
   Tree.init((id) => selectInTree(id), (id) => {
     if (state.tab === "relation") {
       state.selected = id;
@@ -584,7 +650,8 @@ function wire() {
 }
 
 wire();
-call("list_trees").then((l) => {
+call("list_trees").then(async (l) => {
   renderTrees(l);
+  state.home = await call("get_home");
   refresh();
 });
