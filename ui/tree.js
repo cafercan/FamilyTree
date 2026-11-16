@@ -204,6 +204,12 @@ const Tree = {
     return `M${a.x},${a.y} C${c1x},${c1y} ${c2x},${c2y} ${b.x},${b.y}`;
   },
 
+  /** Seçili kişiyi ağacı yeniden çizmeden işaretler */
+  markSelected(id) {
+    this.selectedId = id;
+    document.querySelectorAll("#viewport .node").forEach((g) => g.classList.toggle("selected", Number(g.dataset.person) === id));
+  },
+
   /** Görünümü bir düğüme yumuşakça kaydırır */
   centerOn(key) {
     const n = this.layout && this.layout.nodes.find((x) => x.key === key);
@@ -267,6 +273,7 @@ const Tree = {
     const sub = [n.years, spouses ? "⚭ " + spouses : ""].filter(Boolean).join("  ");
     const g = s("g", {
       class: cls.join(" "),
+      "data-person": n.person_id,
       "data-group": n.shared ? n.shared_group : null,
       style: n.shared ? `--gc: ${groupColor(n.shared_group)}` : null,
       onclick: () => {

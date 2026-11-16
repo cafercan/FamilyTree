@@ -86,6 +86,16 @@ pub fn person_detail(conn: &Connection, id: i64) -> Result<PersonDetail> {
         }
     }
     sibling_ids.sort();
+    // Eşler: kayıtlı eş bağları ve ortak çocuğu olan diğer ebeveynler
+    let mut spouse_ids = db::spouses(conn, id)?;
+    for c in db::children(conn, id)? {
+        let (cf, cm) = db::parents(conn, c)?;
+        for other in [cf, cm].into_iter().flatten() {
+            if other != id && !spouse_ids.contains(&other) {
+                spouse_ids.push(other);
+            }
+        }
+    }
     let mut st = conn.prepare(
         "SELECT s.file_name, s.imported_at, ps.relation_text FROM person_source ps
          JOIN source s ON s.id = ps.source_id WHERE ps.person_id = ?1 ORDER BY s.id, ps.row_no",
@@ -98,7 +108,7 @@ pub fn person_detail(conn: &Connection, id: i64) -> Result<PersonDetail> {
         father: f.map(|x| db::get_person(conn, x)).transpose()?,
         mother: m.map(|x| db::get_person(conn, x)).transpose()?,
         children: persons(conn, db::children(conn, id)?)?,
-        spouses: persons(conn, db::spouses(conn, id)?)?,
+        spouses: persons(conn, spouse_ids)?,
         siblings: persons(conn, sibling_ids)?,
         sources,
     })
@@ -164,5 +174,16 @@ mod tests {
         assert_eq!(d.siblings.iter().map(|x| x.id).collect::<Vec<_>>(), vec![s]);
         assert_eq!(d.children.len(), 1);
         assert!(d.sources.is_empty());
+    }
+
+    /// PDF'te eş satırı olmasa da ortak çocuğu olan kişi eş olarak görünür.
+    #[test]
+    fn co_parent_listed_as_spouse() {
+        let c = db();
+        let k = create_person(&c, &p("ÇOCUK", Some(Sex::Male)), None).unwrap();
+        let f = create_person(&c, &p("BABA", Some(Sex::Male)), Some(NewRelation { to: k, kind: RelationKind::Father })).unwrap();
+        let m = create_person(&c, &p("ANNE", Some(Sex::Female)), Some(NewRelation { to: k, kind: RelationKind::Mother })).unwrap();
+        assert_eq!(person_detail(&c, f).unwrap().spouses.iter().map(|x| x.id).collect::<Vec<_>>(), vec![m]);
+        assert_eq!(person_detail(&c, m).unwrap().spouses.iter().map(|x| x.id).collect::<Vec<_>>(), vec![f]);
     }
 }

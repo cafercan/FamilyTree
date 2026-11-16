@@ -28,6 +28,7 @@ function renderTrees(list) {
 async function afterTreeChange(list) {
   renderTrees(list);
   state.selected = null;
+  state.root = null;
   state.relA = null;
   state.relB = null;
   state.search = "";
@@ -69,6 +70,7 @@ async function refresh(keepView) {
   state.persons = await call("list_persons");
   state.byId = new Map(state.persons.map((p) => [p.id, p]));
   if (state.selected !== null && !state.byId.has(state.selected)) state.selected = null;
+  if (state.root !== null && state.root !== undefined && !state.byId.has(state.root)) state.root = null;
   if (state.selected === null && state.persons.length) state.selected = state.persons.find((p) => !p.placeholder)?.id ?? state.persons[0].id;
   renderList();
   renderRelationSelects();
@@ -169,17 +171,20 @@ async function render(keepView) {
   $("btn-fit").disabled = text;
   if (empty) return;
   if (state.tab === "relation") return renderRelation(keepView);
-  if (state.selected === null) return;
+  // Ağacın kökü: listeden seçilen ya da çift tıklanan kişi; ağaçta tek tıklama kökü değiştirmez
+  if (state.root === null || state.root === undefined) state.root = state.selected;
+  const root = state.root;
+  if (root === null || root === undefined) return;
   if (text) {
-    const up = () => call("outline", { id: state.selected, gens: state.gens, ancestors: true });
-    const down = () => call("outline", { id: state.selected, gens: state.gens, ancestors: false });
+    const up = () => call("outline", { id: root, gens: state.gens, ancestors: true });
+    const down = () => call("outline", { id: root, gens: state.gens, ancestors: false });
     $("text-view").textContent = state.tab === "both"
       ? `ATALAR\n${await up()}\nTORUNLAR\n${await down()}`
       : await (state.tab === "ancestors" ? up() : down());
     return;
   }
   const layout = await call("tree_layout", {
-    kind: state.tab, id: state.selected, gens: state.gens, projection: state.view, twins: settings.collapse !== "merge",
+    kind: state.tab, id: root, gens: state.gens, projection: state.view, twins: settings.collapse !== "merge",
   });
   Tree.selectedId = state.selected;
   Tree.draw(layout, keepView);
@@ -230,14 +235,51 @@ function setTab(tab) {
   render();
 }
 
+/** Listeden ya da bağlantıdan seçim: kişi hem seçilir hem ağacın kökü olur. */
 async function select(id) {
   state.selected = id;
+  state.root = id;
   renderList();
   await renderDetail();
   if (state.tab !== "relation") await render();
-  else {
-    Tree.selectedId = id;
-  }
+  else Tree.markSelected(id);
+}
+
+/** Ağaçta tek tıklama: kişi seçilir, bilgileri gösterilir; ağaç yerinde kalır. */
+async function selectInTree(id) {
+  state.selected = id;
+  renderList();
+  Tree.markSelected(id);
+  await renderDetail();
+  const li = document.querySelector("#person-list li.selected");
+  if (li) li.scrollIntoView({ block: "nearest" });
+}
+
+function parseDate(s) {
+  const m = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec((s || "").trim());
+  return m ? new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])) : null;
+}
+
+/** Yaş (hayattaysa bugüne, vefat ettiyse ölüm tarihine göre) */
+function ageText(p) {
+  const b = parseDate(p.birth_date);
+  if (!b) return null;
+  const end = p.alive === false ? parseDate(p.death_date) : p.alive === true ? new Date() : null;
+  if (!end) return null;
+  let age = end.getFullYear() - b.getFullYear();
+  if (end.getMonth() < b.getMonth() || (end.getMonth() === b.getMonth() && end.getDate() < b.getDate())) age--;
+  if (age < 0 || age > 130) return null;
+  return p.alive === false ? `${age} yaşında vefat` : `${age}`;
+}
+
+/** Bilgi tablosu etiketinin alan adı (elle düzeltme işareti için) */
+function infoField(label) {
+  return {
+    "Cinsiyet": "sex", "Doğum yeri": "birth_place", "Doğum tarihi": "birth_date", "Durumu": "alive",
+    "Ölüm tarihi": "death_date", "Baba adı": "father_name", "Ana adı": "mother_name",
+    "Medeni hali": "marital_status", "Nüfusa kayıtlı yer": "province_district",
+    "Cilt-Hane-Birey No": "register_no", "Mahalle/Köy": "neighborhood", "T.C. kimlik no": "tc",
+  }[label] || "";
 }
 
 function linkList(title, persons, onRemove) {
@@ -257,14 +299,23 @@ async function renderDetail() {
   }
   const d = await call("person_detail", { id: state.selected });
   const p = d.person;
-  const facts = [
-    p.sex === "E" ? "Erkek" : p.sex === "K" ? "Kadın" : null,
-    p.birth_place || p.birth_date ? `Doğum: ${[p.birth_place, p.birth_date].filter(Boolean).join(" ")}` : null,
-    p.alive === false ? `Vefat${p.death_date ? ": " + p.death_date : ""}` : p.alive === true ? "Hayatta" : null,
-    p.province_district ? `Kayıt: ${p.province_district}${p.register_no ? " (" + p.register_no + ")" : ""}` : null,
-    p.marital_status || null,
-    p.placeholder ? "Yer tutucu: PDF'te satırı yok, bilgileri düzenleyebilirsiniz" : null,
-  ].filter(Boolean);
+  const age = ageText(p);
+  const info = [
+    ["Cinsiyet", p.sex === "E" ? "Erkek" : p.sex === "K" ? "Kadın" : ""],
+    ["Doğum yeri", p.birth_place],
+    ["Doğum tarihi", p.birth_date],
+    ["Durumu", p.alive === false ? "Vefat etmiş" : p.alive === true ? "Hayatta" : ""],
+    ["Ölüm tarihi", p.death_date],
+    [p.alive === false ? "Vefat yaşı" : "Yaşı", age ? age.replace(" yaşında vefat", "") : ""],
+    ["Baba adı", p.father_name],
+    ["Ana adı", p.mother_name],
+    ["Medeni hali", p.marital_status],
+    ["Nüfusa kayıtlı yer", p.province_district],
+    ["Cilt-Hane-Birey No", p.register_no],
+    ["Mahalle/Köy", p.neighborhood],
+    ["T.C. kimlik no", p.tc],
+  ].filter(([, v]) => v);
+  const manual = new Set(p.manual_fields || []);
   const id = p.id;
   const unlinkParent = (role) => async () => {
     await call("remove_parent", { child: id, role });
@@ -280,9 +331,18 @@ async function renderDetail() {
       await refresh(true);
     },
   }, label);
-  box.replaceChildren(
-    h("h2", {}, fullName(p) + deathMark(p.alive)),
-    h("div", { class: "facts" }, facts.join(" · ")),
+  box.replaceChildren(...[
+    h("div", { class: "detail-head" },
+      h("h2", {}, fullName(p) + deathMark(p.alive)),
+      (state.root ?? state.selected) !== id && state.tab !== "relation"
+        ? h("button", { onclick: () => select(id), title: "Ağacı bu kişiden yeniden çiz (ya da kişiye çift tıklayın)" }, "Ağacı bu kişiden başlat")
+        : null),
+    p.placeholder ? h("p", { class: "warn" }, "Yer tutucu: bu kişinin PDF'te kendi satırı yok; bilgilerini Düzenle ile girebilirsiniz.") : null,
+    info.length
+      ? h("dl", { class: "info" }, info.map(([k, v]) =>
+        h("div", { title: manual.has(infoField(k)) ? "Elle düzeltildi" : "" }, h("dt", {}, k, manual.has(infoField(k)) ? " ✎" : ""), h("dd", {}, v))))
+      : null,
+    p.notes ? h("div", { class: "notes" }, h("b", {}, "Notlar: "), p.notes) : null,
     h("div", { class: "family" },
       linkList("Babası", d.father ? [d.father] : [], d.father ? unlinkParent("E") : null),
       linkList("Annesi", d.mother ? [d.mother] : [], d.mother ? unlinkParent("K") : null),
@@ -325,9 +385,11 @@ async function renderDetail() {
         },
       }, "Sil")),
     d.sources.length
-      ? h("div", { class: "sources" }, "Kaynak: " + d.sources.map((s) => `${s.file_name} ("${s.relation_text}")`).join(", "))
-      : null,
-  );
+      ? h("div", { class: "sources" }, h("b", {}, "Geçtiği PDF'ler: "),
+        [...new Map(d.sources.map((x) => [`${x.file_name}|${x.relation_text}`, x])).values()]
+          .map((x) => `${x.file_name} — "${x.relation_text}"`).join("; "))
+      : h("div", { class: "sources" }, "Elle eklendi (PDF kaynağı yok)"),
+  ].filter(Boolean));
   box.hidden = false;
   if (p.sex !== "E" && p.sex !== "K") {
     box.querySelector(".buttons").append(h("span", { class: "note" }, "Çocuk eklemek için cinsiyeti girin."));
@@ -371,10 +433,13 @@ function wire() {
     toast(`"${name}" açıldı. Şimdi PDF içe aktarabilirsiniz.`);
   };
   $("btn-tree-more").onclick = treeMenu;
-  Tree.init((id) => select(id), (id) => {
-    state.selected = id;
-    if (state.tab === "relation") setTab("ancestors");
-    else select(id);
+  // Ağaçta tek tıklama bilgileri gösterir, çift tıklama ağacı o kişiden başlatır
+  Tree.init((id) => selectInTree(id), (id) => {
+    if (state.tab === "relation") {
+      state.selected = id;
+      state.root = id;
+      setTab("ancestors");
+    } else select(id);
   });
   $("btn-import").onclick = async () => {
     if (await importFlow()) await refresh();
