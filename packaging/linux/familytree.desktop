@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=FamilyTree
+GenericName=Family Tree
+GenericName[tr]=Soy Ağacı
+Comment=Family tree and kinship finder from e-Devlet lineage PDFs
+Comment[tr]=e-Devlet soy ağacı PDF'lerinden aile ağacı ve akrabalık bulucu
+Exec=familytree
+Icon=familytree
+Terminal=false
+Categories=Office;Utility;
+Keywords=soy ağacı;aile;akrabalık;genealogy;family tree;e-devlet;
+StartupNotify=true
+StartupWMClass=familytree

@@ -1,4 +1,4 @@
-# Her gönderimde: çekirdek testleri (PDF ayrıştırma, içe aktarma, akrabalık, yerleşim,
+# Her gönderimde (Linux, Windows, macOS): çekirdek testleri (PDF ayrıştırma, içe aktarma, akrabalık, yerleşim,
 # yedek) ve uygulamanın pencere açmadan --selftest denemesi.
 name: Test
 
@@ -27,6 +27,15 @@ jobs:
 
   windows:
     runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --locked
+      - run: cargo run --locked -p familytree -- --selftest
+
+  macos:
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v7
       - run: rustup toolchain install stable --profile minimal && rustup default stable

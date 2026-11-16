@@ -1049,6 +1049,7 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "familytree-core",
+ "gtk",
  "rusqlite",
  "serde",
  "serde_json",

@@ -391,6 +391,10 @@ fn main() {
     if std::env::args().skip(1).any(|a| a == "--selftest") {
         std::process::exit(selftest(&context));
     }
+    // GNOME/KDE pencereyi .desktop girişiyle eşleştirsin (StartupWMClass=familytree)
+    #[cfg(target_os = "linux")]
+    gtk::glib::set_prgname(Some("familytree"));
+
     let last = std::fs::read_to_string(base_dir().join("son-agac.txt")).ok();
     let opened = trees::prepare(&base_dir(), last.as_deref().map(str::trim))
         .and_then(|name| Ok((db::open(&trees::tree_path(&base_dir(), &name)?)?, name)));
