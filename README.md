@@ -7,7 +7,13 @@ birleştiren, eksik akrabaları elle eklemeye izin veren, iki kişi arasındaki 
 içindeki **akraba evliliklerini** bulan, sonucu modern ağaç diyagramlarıyla gösteren masaüstü
 uygulaması. **Windows**, **macOS** ve **Ubuntu (Linux)** için.
 
-Verileriniz bilgisayarınızdan çıkmaz: uygulamanın ağ erişimi yoktur.
+> **FamilyTree açık kaynaklı ([MIT](LICENSE)), basit bir soy ağacı diyagram uygulamasıdır.**
+> Reklam, hesap/üyelik, analitik veya izleme içermez ve **internet bağlantısı kullanmaz**:
+> hiçbir veri toplamaz, hiçbir yere göndermez. Tüm bilgiler yalnızca kendi bilgisayarınızda,
+> sizin dosyalarınızda saklanır.
+>
+> e-Devlet Kapısı veya Nüfus ve Vatandaşlık İşleri Genel Müdürlüğü ile bir bağlantısı yoktur;
+> yalnızca kullanıcının kendi e-Devlet'ten aldığı PDF çıktısını okur.
 
 <p align="center">
   <img src="docs/screenshot.png" alt="FamilyTree — Ata + Soy görünümü (uydurma örnek verilerle)" width="900">
@@ -142,7 +148,8 @@ ayrı bir ağaç açın.
 ## Gizlilik
 
 - Uygulamanın **ağ erişimi yoktur** (içerik güvenlik politikası yalnız yerel arayüze izin verir;
-  ağ eklentisi yoktur); hiçbir bilgi bilgisayardan çıkmaz.
+  ağ eklentisi yoktur); hiçbir bilgi bilgisayardan çıkmaz. Reklam, analitik, hata raporu
+  gönderimi veya güncelleme denetimi yoktur.
 - Her soy ağacı kullanıcı veri klasöründe ayrı bir SQLite dosyasıdır:
   - Windows: `%APPDATA%\FamilyTree\agaclar\<ad>.db`
   - macOS: `~/Library/Application Support/FamilyTree/agaclar/<ad>.db`
