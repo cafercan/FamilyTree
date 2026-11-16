@@ -5,8 +5,8 @@ const state = {
   persons: [],
   byId: new Map(),
   selected: null,
-  tab: "ancestors",
-  view: "Vertical",
+  tab: "both",
+  view: "Horizontal",
   gens: 8,
   relA: null,
   relB: null,
@@ -241,6 +241,10 @@ function showRelation(a, b) {
 
 function setTab(tab) {
   state.tab = tab;
+  if (tab !== "relation") {
+    settings.tab = tab;
+    saveSettings();
+  }
   for (const b of document.querySelectorAll("[data-tab]")) b.classList.toggle("active", b.dataset.tab === tab);
   render();
 }
@@ -468,10 +472,17 @@ function wire() {
   for (const b of document.querySelectorAll("[data-view]")) {
     b.onclick = () => {
       state.view = b.dataset.view;
+      settings.view = state.view;
+      saveSettings();
       for (const x of document.querySelectorAll("[data-view]")) x.classList.toggle("active", x === b);
       render();
     };
   }
+  // Açılış görünümü: son seçilen (varsayılan Ata + Soy, Yatay)
+  if (["ancestors", "descendants", "both"].includes(settings.tab)) state.tab = settings.tab;
+  if (["Vertical", "Horizontal", "Radial", "Text"].includes(settings.view)) state.view = settings.view;
+  for (const b of document.querySelectorAll("[data-tab]")) b.classList.toggle("active", b.dataset.tab === state.tab);
+  for (const b of document.querySelectorAll("[data-view]")) b.classList.toggle("active", b.dataset.view === state.view);
   // Kuşak sayısı: 2-15, son seçim hatırlanır
   state.gens = Math.min(15, Math.max(2, Number(settings.gens) || 8));
   for (let g = 2; g <= 15; g++) $("gens").append(h("option", { value: String(g), selected: g === state.gens }, String(g)));

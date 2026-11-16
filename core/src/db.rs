@@ -252,6 +252,12 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         conn.execute_batch(SCHEMA)?;
         conn.execute_batch("PRAGMA user_version = 1;")?;
     }
+    if v < 2 {
+        // 2: en üst kuşağı baba/ana adlarından tamamlama eklendi; önceki sürümle içe
+        // aktarılmış ağaçlarda bir kez çalıştır
+        crate::family::complete_top_parents(conn)?;
+        conn.execute_batch("PRAGMA user_version = 2;")?;
+    }
     Ok(())
 }
 
@@ -589,7 +595,34 @@ mod tests {
         migrate(&c).unwrap();
         assert_eq!(get_person(&c, id).unwrap().info.given_name, "EMRE");
         let v: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 1);
+        assert_eq!(v, 2);
+    }
+
+    /// Şema 1 → 2: önceki sürümle içe aktarılmış ağaçlarda en üst kuşak bir kez tamamlanır.
+    #[test]
+    fn upgrade_to_v2_completes_top_parents_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("eski.db");
+        {
+            let c = Connection::open(&path).unwrap();
+            c.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+            c.execute_batch(SCHEMA).unwrap();
+            c.execute_batch("PRAGMA user_version = 1;").unwrap();
+            let mut x = p("RIZA", Sex::Male);
+            x.father_name = "ÖMER".into();
+            x.mother_name = "ŞERİFE".into();
+            insert_person(&c, &x, false).unwrap();
+        }
+        let c = open(&path).unwrap();
+        let v: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, 2);
+        assert_eq!(list_persons(&c).unwrap().len(), 3, "Ömer ve Şerife eklendi");
+        // Kullanıcı yer tutucuyu silse bile tekrar açılışta yeniden eklenmez
+        let omer = list_persons(&c).unwrap().into_iter().find(|x| x.info.given_name == "ÖMER").unwrap().id;
+        delete_person(&c, omer).unwrap();
+        drop(c);
+        let c = open(&path).unwrap();
+        assert_eq!(list_persons(&c).unwrap().len(), 2);
     }
 
     #[test]
