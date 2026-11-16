@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #f6f7f5;
   --panel: #ffffff;
   --text: #1d2420;
@@ -26,8 +27,10 @@
   --g5: #5a8f1c;
 }
 
+/* Koyu tema: sistem koyuysa (ayarlarda "Açık" seçilmediyse) ya da ayarlarda "Koyu" seçildiyse */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #161a18;
     --panel: #1f2421;
     --text: #e4e8e5;
@@ -53,6 +56,34 @@
     --g4: #6fa8ff;
     --g5: #9fd45a;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161a18;
+  --panel: #1f2421;
+  --text: #e4e8e5;
+  --muted: #9aa39d;
+  --line: #333a36;
+  --accent: #4caf84;
+  --accent-text: #0d1310;
+  --male: #22344a;
+  --male-line: #7aa7dd;
+  --female: #47283a;
+  --female-line: #e08aa6;
+  --unknown: #2c2f2d;
+  --unknown-line: #8f9590;
+  --edge: #4c5550;
+  --highlight: #f2c14e;
+  --warn-bg: #3d3115;
+  --warn-text: #f2d48a;
+  --danger: #f2827a;
+  --g0: #ffad42;
+  --g1: #b98cff;
+  --g2: #3cc8c8;
+  --g3: #f07ab8;
+  --g4: #6fa8ff;
+  --g5: #9fd45a;
 }
 
 * { box-sizing: border-box; }

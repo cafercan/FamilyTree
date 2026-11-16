@@ -410,14 +410,37 @@ function wire() {
     const col = h("select", {},
       h("option", { value: "twins", selected: settings.collapse !== "merge" }, "İkiz kart: her kolda yerinde, aynı renk (önerilen)"),
       h("option", { value: "merge", selected: settings.collapse === "merge" }, "Tek kart: ikinci koldan renkli birleşme oku"));
+    const theme = h("select", {},
+      h("option", { value: "system", selected: settings.theme === "system" }, "Sistem ayarını izle"),
+      h("option", { value: "light", selected: settings.theme === "light" }, "Açık"),
+      h("option", { value: "dark", selected: settings.theme === "dark" }, "Koyu"));
+    const accent = h("select", {}, Object.entries(ACCENTS).map(([k, a]) =>
+      h("option", { value: k, selected: settings.accent === k }, a.label)));
+    // Seçimler anında önizlenir; vazgeçilirse eski hale döner
+    const before = { theme: settings.theme, accent: settings.accent };
+    const preview = () => {
+      settings.theme = theme.value;
+      settings.accent = accent.value;
+      applyTheme();
+    };
+    theme.onchange = preview;
+    accent.onchange = preview;
     const body = h("div", { class: "settings" },
+      h("label", { class: "note" }, "Tema", h("br"), theme),
+      h("label", { class: "note" }, "Vurgu rengi", h("br"), accent),
       h("label", { class: "note" }, "Vefat etmiş kişilerin adının yanında", h("br"), sel),
       h("label", { class: "note" }, "Akraba evliliğindeki ortak atalar", h("br"), col));
     const v = await openDialog("Ayarlar", body, [
       { label: "Vazgeç", value: null },
       { label: "Kaydet", value: "ok", primary: true },
     ]);
-    if (v !== "ok") return;
+    if (v !== "ok") {
+      Object.assign(settings, before);
+      applyTheme();
+      return;
+    }
+    settings.theme = theme.value;
+    settings.accent = accent.value;
     settings.death = sel.value;
     settings.collapse = col.value;
     saveSettings();

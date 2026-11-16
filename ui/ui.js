@@ -137,7 +137,7 @@ async function promptBox(title, label, initial, okLabel) {
 
 // Görünüm ayarları: yalnızca bu bilgisayarda (tarayıcı deposunda) saklanır
 const SETTINGS_KEY = "familytree.ayarlar";
-const settings = { death: "cross", collapse: "twins" };
+const settings = { death: "cross", collapse: "twins", theme: "system", accent: "green" };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {
@@ -157,3 +157,41 @@ function deathMark(alive) {
   if (alive !== false) return "";
   return settings.death === "o" ? " (ö.)" : settings.death === "none" ? "" : " †";
 }
+
+/** Vurgu renkleri: [açık tema, koyu tema] */
+const ACCENTS = {
+  green: { label: "Yeşil", light: "#2e7d5a", dark: "#4caf84" },
+  blue: { label: "Mavi", light: "#2f6fd1", dark: "#6fa8ff" },
+  purple: { label: "Mor", light: "#7a45c4", dark: "#b98cff" },
+  burgundy: { label: "Bordo", light: "#9c2d4a", dark: "#e57a98" },
+  orange: { label: "Turuncu", light: "#c2610c", dark: "#ffad42" },
+};
+
+const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+function isDark() {
+  if (settings.theme === "dark") return true;
+  if (settings.theme === "light") return false;
+  return !!(darkQuery && darkQuery.matches);
+}
+
+/** Tema ve vurgu rengini belgeye uygular */
+function applyTheme() {
+  const root = document.documentElement;
+  if (settings.theme === "light" || settings.theme === "dark") root.dataset.theme = settings.theme;
+  else delete root.dataset.theme;
+  const a = ACCENTS[settings.accent] || ACCENTS.green;
+  const dark = isDark();
+  root.style.setProperty("--accent", dark ? a.dark : a.light);
+  root.style.setProperty("--accent-text", dark ? "#0d1310" : "#ffffff");
+  root.style.colorScheme = dark ? "dark" : "light";
+}
+
+if (darkQuery) {
+  try {
+    darkQuery.addEventListener("change", applyTheme);
+  } catch {
+    /* eski motorlar */
+  }
+}
+applyTheme();

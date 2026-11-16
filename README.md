@@ -29,6 +29,8 @@ içindeki akraba evliliklerini bulan, sonucu ağaç diyagramı olarak gösteren 
 - **Birden çok soy ağacı:** "Benim ağacım", "Eşimin ağacı" gibi birbirinden bağımsız ağaçlar
   açılabilir; içe aktarma, eşleştirme ve akrabalık hesabı yalnızca açık ağaçta çalışır.
 - **Yedekleme:** açık ağaç tek bir JSON dosyasına alınıp geri yüklenebilir.
+- **Ayarlar (⚙):** tema (sistem / açık / koyu), vurgu rengi, vefat işareti († / (ö.) / yok) ve
+  ortak ataların gösterimi.
 
 ## Gizlilik
 
@@ -42,9 +44,20 @@ Bu depodaki örnek PDF'ler (`tests/fixtures/`) ve ekran görüntüsü **tamamen 
 
 ## e-Devlet'ten PDF alma
 
-1. e-Devlet'te **Alt-Üst Soy Bilgisi Sorgulama** hizmetini açın.
-2. Sonucu tarayıcının **Yazdır** menüsünden **PDF olarak kaydet**in.
-3. FamilyTree'de **PDF içe aktar**a basıp dosyayı seçin.
+1. e-Devlet'e girip [Alt-Üst Soy Bilgisi Sorgulama](https://www.turkiye.gov.tr/nvi-alt-ust-soy-bilgisi-sorgulama)
+   hizmetini açın ve sorgulayın.
+2. Sonuç sayfasındaki **Yazdır** düğmesine basın.
+3. Açılan yazdırma penceresinde:
+   - Hedef / yazıcı: **PDF olarak kaydet**
+   - **"Üst bilgi ve alt bilgileri yazdır"** (Headers and footers) kutucuğunun işaretini
+     **kaldırın**. Tarih, adres ve sayfa numarası tabloya karışmasın.
+   - Kağıt: **A4**, yön: **Yatay** önerilir. Uygulama sayfa boyutundan etkilenmez; önemli olan
+     tablonun tüm sütunlarının sayfaya sığması (gerekirse ölçek: **Sayfaya sığdır**).
+4. PDF'i kaydedin ve FamilyTree'de **PDF içe aktar** ile seçin.
+
+Kuzenlerinizin, eşinizin ya da diğer akrabalarınızın PDF'lerini de aynı yolla alabilirsiniz
+(her kişi kendi e-Devlet hesabından). Eşiniz gibi ayrı tutmak istediğiniz aileler için sol
+üstteki **Yeni** düğmesiyle ayrı bir soy ağacı açın.
 
 PDF okunamazsa uygulama kişisel bilgi içermeyen bir **düzen dökümü**
 sunar (her kelime `x`, her sayı `0`; uzunluklar da gizlenir); bunu bir hata kaydına ekleyerek ayrıştırıcının düzeltilmesine yardım edebilirsiniz.
