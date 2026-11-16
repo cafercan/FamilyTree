@@ -29,31 +29,46 @@ const Tree = {
       this.scale = ns;
       this.apply();
     }, { passive: false });
+    // Sürükleyerek kaydırma. Fare, ancak gerçekten sürükleme başlayınca yakalanır; böylece
+    // basit tıklama kişinin düğümüne ulaşır (önceden yakalama tıklamayı zemine çekiyordu).
     let drag = null;
     svg.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
-      drag = { x: e.clientX, y: e.clientY, tx: this.tx, ty: this.ty, moved: false };
-      svg.setPointerCapture(e.pointerId);
+      this.justDragged = false;
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, tx: this.tx, ty: this.ty, moved: false };
     });
     svg.addEventListener("pointermove", (e) => {
       if (!drag) return;
       const dx = e.clientX - drag.x;
       const dy = e.clientY - drag.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) {
+      if (!drag.moved) {
+        if (Math.abs(dx) + Math.abs(dy) <= 4) return;
         drag.moved = true;
         svg.classList.add("dragging");
+        try {
+          svg.setPointerCapture(drag.id);
+        } catch {
+          /* yakalanamazsa sürükleme yine çalışır */
+        }
       }
       this.tx = drag.tx + dx;
       this.ty = drag.ty + dy;
       this.apply();
     });
     const end = () => {
-      if (drag && drag.moved) this.suppressClick = true;
+      if (drag && drag.moved) this.justDragged = true;
       drag = null;
       svg.classList.remove("dragging");
     };
     svg.addEventListener("pointerup", end);
     svg.addEventListener("pointercancel", end);
+    // Sürüklemenin sonundaki tıklama kişiyi seçmesin
+    svg.addEventListener("click", (e) => {
+      if (this.justDragged) {
+        e.stopPropagation();
+        this.justDragged = false;
+      }
+    }, true);
   },
 
   apply() {
@@ -277,10 +292,6 @@ const Tree = {
       "data-group": n.shared ? n.shared_group : null,
       style: n.shared ? `--gc: ${groupColor(n.shared_group)}` : null,
       onclick: () => {
-        if (this.suppressClick) {
-          this.suppressClick = false;
-          return;
-        }
         this.onSelect && this.onSelect(n.person_id);
         if (n.twin_of) this.centerOn(n.twin_of);
       },
