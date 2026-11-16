@@ -21,6 +21,9 @@ içindeki akraba evliliklerini bulan, sonucu ağaç diyagramı olarak gösteren 
 - **Akrabalık bulma:** iki kişinin en yakın ortak ataları ve Türkçe akrabalık adı
   ("Teyzesi", "2. dereceden kuzeni (1 kuşak fark)", "Baba bir kız kardeşi"…).
 - **Akraba evliliği raporu:** ortak atası olan çiftler otomatik listelenir.
+- **Ortak atalar ağaçta:** akraba evliliğindeki ortak ata her iki kolda da yerinde, aynı renkte
+  "ikiz kart" olarak görünür; üzerine gelince iki kart arasında bağlantı belirir, tıklayınca
+  asıl karta gidilir. İstenirse ayarlardan tek kart + renkli birleşme oku seçilebilir.
 - **Dört görünüm:** dikey kutulu ağaç, yatay ağaç, dairesel (yelpaze) ağaç ve girintili metin;
   ata ağacı, soy ağacı ve iki kişi arasındaki akrabalık yolu için.
 - **Birden çok soy ağacı:** "Benim ağacım", "Eşimin ağacı" gibi birbirinden bağımsız ağaçlar

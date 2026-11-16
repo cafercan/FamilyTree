@@ -193,7 +193,17 @@ input, select, textarea {
 .merge-edge.cross { stroke-dasharray: 7 4; }
 .merge-edge.focus { stroke-width: 4.5; }
 .merge-casing.focus { stroke-width: 10; }
-.merges path { pointer-events: none; }
+.merges path, .twin-links path { pointer-events: none; }
+/* İkiz kart: aynı kişinin diğer koldaki kopyası */
+.node.twin rect, .node.twin circle { stroke-dasharray: 6 3; fill-opacity: 0.55; }
+.node.twin text { opacity: 0.8; }
+.node.glow rect, .node.glow circle { stroke-width: 5; filter: drop-shadow(0 0 6px var(--gc)); }
+.twin-link { fill: none; stroke-width: 3; stroke-dasharray: 8 6; animation: twin-dash 0.8s linear infinite; }
+@keyframes twin-dash { to { stroke-dashoffset: -14; } }
+/* Bir kişinin üzerine gelince birleşme okları şeffaflaşır, yazı okunur */
+#viewport.hovering .merges path:not(.focus) { opacity: 0.12; }
+#viewport { transform-origin: 0 0; }
+#viewport.panning { transition: transform 0.4s ease; }
 .legend {
   position: absolute;
   left: 12px;
@@ -222,6 +232,7 @@ input, select, textarea {
 }
 .edge { fill: none; stroke: var(--edge); stroke-width: 1.5; }
 .edge.highlight { stroke: var(--highlight); stroke-width: 2.5; }
+.edge.grouped { stroke-width: 2.5; }
 
 .detail {
   border-top: 1px solid var(--line);
@@ -274,3 +285,5 @@ dialog pre { max-height: 50vh; overflow: auto; font-size: 11px; background: var(
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 .toast.error { background: var(--danger); color: #fff; }
+
+dialog .settings { display: flex; flex-direction: column; gap: 12px; min-width: 360px; }

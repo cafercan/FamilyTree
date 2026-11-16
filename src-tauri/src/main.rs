@@ -216,11 +216,11 @@ fn consanguinity_report(state: State<AppState>) -> Res<Vec<ConsanguinityItem>> {
 
 /// `kind`: "ancestors", "descendants" ya da "both" (kum saati)
 #[tauri::command]
-fn tree_layout(state: State<AppState>, kind: String, id: i64, gens: u32, projection: Projection) -> Res<TreeLayout> {
+fn tree_layout(state: State<AppState>, kind: String, id: i64, gens: u32, projection: Projection, twins: bool) -> Res<TreeLayout> {
     with_db(&state, |c| match kind.as_str() {
-        "descendants" => layout::descendants_layout(c, id, gens, projection),
-        "both" => layout::hourglass_layout(c, id, gens, projection),
-        _ => layout::ancestors_layout(c, id, gens, projection),
+        "descendants" => layout::descendants_layout(c, id, gens, projection, twins),
+        "both" => layout::hourglass_layout(c, id, gens, projection, twins),
+        _ => layout::ancestors_layout(c, id, gens, projection, twins),
     })
 }
 

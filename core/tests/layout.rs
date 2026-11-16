@@ -44,7 +44,7 @@ fn assert_no_overlap(l: &TreeLayout) {
 #[test]
 fn no_overlap_in_ancestors() {
     let c = db_with(&["ornek-ali.pdf"]);
-    let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical).unwrap();
+    let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical, false).unwrap();
     assert_eq!(l.nodes.len(), 12, "Emre + 2 + 4 + 7, ortak atalar (Rıza, Hatice) birer kez");
     for a in &l.nodes {
         for b in &l.nodes {
@@ -66,7 +66,7 @@ fn no_overlap_in_ancestors() {
 #[test]
 fn shared_ancestor_drawn_once() {
     let c = db_with(&["ornek-ali.pdf"]);
-    let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical).unwrap();
+    let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical, false).unwrap();
     let riza = node(&l, find(&c, "RIZA", ""));
     assert_eq!(riza.len(), 1);
     assert!(riza[0].shared);
@@ -103,7 +103,7 @@ fn shared_ancestor_at_different_depths() {
     set_parent(&c, m, b, Sex::Female, "manual").unwrap();
     set_parent(&c, b, b2, Sex::Female, "manual").unwrap();
     set_parent(&c, b2, ata, Sex::Male, "manual").unwrap();
-    let l = ancestors_layout(&c, kok, 6, Projection::Vertical).unwrap();
+    let l = ancestors_layout(&c, kok, 6, Projection::Vertical, false).unwrap();
     let ata_n = node(&l, ata);
     assert_eq!(ata_n.len(), 1);
     assert_eq!(ata_n[0].depth, 4);
@@ -118,7 +118,7 @@ fn shared_ancestor_at_different_depths() {
 #[test]
 fn shared_descendant_drawn_once() {
     let c = db_with(&["ornek-ali.pdf"]);
-    let l = descendants_layout(&c, find(&c, "RIZA", ""), 5, Projection::Vertical).unwrap();
+    let l = descendants_layout(&c, find(&c, "RIZA", ""), 5, Projection::Vertical, false).unwrap();
     let emre = node(&l, find(&c, "EMRE", "YILMAZ"));
     assert_eq!(emre.len(), 1);
     assert_eq!(l.edges.iter().filter(|e| e.to == emre[0].key).count(), 2, "Mehmet ve Nurten'den");
@@ -130,7 +130,7 @@ fn shared_descendant_drawn_once() {
 fn hourglass_ancestors_above_descendants_below() {
     let c = db_with(&["ornek-ali.pdf"]);
     let kadir = find(&c, "KADİR", "YILMAZ");
-    let l = hourglass_layout(&c, kadir, 3, Projection::Vertical).unwrap();
+    let l = hourglass_layout(&c, kadir, 3, Projection::Vertical, false).unwrap();
     let k = node(&l, kadir);
     assert_eq!(k.len(), 1);
     let y = |id: i64| node(&l, id)[0].y;
@@ -139,7 +139,7 @@ fn hourglass_ancestors_above_descendants_below() {
     assert!(y(find(&c, "EMRE", "YILMAZ")) > y(find(&c, "MEHMET", "YILMAZ")));
     assert_no_overlap(&l);
     for proj in [Projection::Horizontal, Projection::Radial] {
-        let h = hourglass_layout(&c, kadir, 3, proj).unwrap();
+        let h = hourglass_layout(&c, kadir, 3, proj, false).unwrap();
         assert_eq!(h.nodes.len(), l.nodes.len());
     }
 }
@@ -147,7 +147,7 @@ fn hourglass_ancestors_above_descendants_below() {
 #[test]
 fn parent_centered_over_children() {
     let c = db_with(&["ornek-ali.pdf"]);
-    let l = descendants_layout(&c, find(&c, "KADİR", "YILMAZ"), 5, Projection::Vertical).unwrap();
+    let l = descendants_layout(&c, find(&c, "KADİR", "YILMAZ"), 5, Projection::Vertical, false).unwrap();
     let hasan = node(&l, find(&c, "KADİR", "YILMAZ"))[0];
     let mehmet = node(&l, find(&c, "MEHMET", "YILMAZ"))[0];
     let ali = node(&l, find(&c, "EMRE", "YILMAZ"))[0];
@@ -173,7 +173,7 @@ fn relationship_layout_highlights_paths() {
 fn horizontal_projection_root_left() {
     let c = db_with(&["ornek-ali.pdf"]);
     let ali_id = find(&c, "EMRE", "YILMAZ");
-    let l = ancestors_layout(&c, ali_id, 4, Projection::Horizontal).unwrap();
+    let l = ancestors_layout(&c, ali_id, 4, Projection::Horizontal, false).unwrap();
     let ali = node(&l, ali_id)[0];
     assert!(l.nodes.iter().all(|n| n.x >= ali.x));
     for a in &l.nodes {
@@ -189,7 +189,7 @@ fn horizontal_projection_root_left() {
 fn radial_root_at_center() {
     let c = db_with(&["ornek-ali.pdf"]);
     let ali_id = find(&c, "EMRE", "YILMAZ");
-    let l = ancestors_layout(&c, ali_id, 4, Projection::Radial).unwrap();
+    let l = ancestors_layout(&c, ali_id, 4, Projection::Radial, false).unwrap();
     let ali = node(&l, ali_id)[0];
     for n in &l.nodes {
         let r = ((n.x - ali.x).powi(2) + (n.y - ali.y).powi(2)).sqrt();
@@ -213,7 +213,7 @@ fn outline_text() {
 #[test]
 fn horizontal_rows_leave_room_for_spouse_line() {
     let c = db_with(&["ornek-ali.pdf"]);
-    let l = descendants_layout(&c, find(&c, "RIZA", ""), 4, Projection::Horizontal).unwrap();
+    let l = descendants_layout(&c, find(&c, "RIZA", ""), 4, Projection::Horizontal, false).unwrap();
     assert!(l.nodes.iter().any(|n| !n.spouse_labels.is_empty()));
     for a in &l.nodes {
         for b in &l.nodes {
@@ -222,4 +222,30 @@ fn horizontal_rows_leave_room_for_spouse_line() {
             }
         }
     }
+}
+
+/// İkiz kart: ortak ata her iki kolda da yerinde; biri asıl kart, diğeri ikiz. Uzun
+/// birleşme çizgisi yok, ikisi aynı renk grubunda.
+#[test]
+fn twin_cards_instead_of_merge_lines() {
+    let c = db_with(&["ornek-ali.pdf"]);
+    let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical, true).unwrap();
+    assert_eq!(l.nodes.len(), 14, "ortak atalar iki kolda da yerinde");
+    assert!(l.edges.iter().all(|e| !e.merge), "birleşme çizgisi yok");
+    assert_eq!(l.edges.len(), 13);
+    let riza = node(&l, find(&c, "RIZA", ""));
+    assert_eq!(riza.len(), 2);
+    let main: Vec<_> = riza.iter().filter(|n| n.twin_of.is_none()).collect();
+    let twin: Vec<_> = riza.iter().filter(|n| n.twin_of.is_some()).collect();
+    assert_eq!((main.len(), twin.len()), (1, 1));
+    assert_eq!(twin[0].twin_of.as_deref(), Some(main[0].key.as_str()));
+    assert!(riza.iter().all(|n| n.shared && n.shared_group == main[0].shared_group && n.shared_group.is_some()));
+    let hatice = node(&l, find(&c, "HATİCE", ""));
+    assert_ne!(hatice[0].shared_group, riza[0].shared_group);
+    assert_eq!(node(&l, find(&c, "OSMAN", "KAYA"))[0].shared_group, None);
+    assert_no_overlap(&l);
+    // Kum saati ve soy görünümü de ikiz kartla çalışır
+    let d = descendants_layout(&c, find(&c, "RIZA", ""), 5, Projection::Vertical, true).unwrap();
+    assert_eq!(node(&d, find(&c, "EMRE", "YILMAZ")).len(), 2);
+    assert_no_overlap(&d);
 }

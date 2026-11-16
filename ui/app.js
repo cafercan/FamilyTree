@@ -178,7 +178,9 @@ async function render(keepView) {
       : await (state.tab === "ancestors" ? up() : down());
     return;
   }
-  const layout = await call("tree_layout", { kind: state.tab, id: state.selected, gens: state.gens, projection: state.view });
+  const layout = await call("tree_layout", {
+    kind: state.tab, id: state.selected, gens: state.gens, projection: state.view, twins: settings.collapse !== "merge",
+  });
   Tree.selectedId = state.selected;
   Tree.draw(layout, keepView);
 }
@@ -405,16 +407,23 @@ function wire() {
       h("option", { value: "cross", selected: settings.death === "cross" }, "† işareti"),
       h("option", { value: "o", selected: settings.death === "o" }, "(ö.) yazısı"),
       h("option", { value: "none", selected: settings.death === "none" }, "Gösterme"));
-    const v = await openDialog("Ayarlar", h("label", { class: "note" }, "Vefat etmiş kişilerin adının yanında", h("br"), sel), [
+    const col = h("select", {},
+      h("option", { value: "twins", selected: settings.collapse !== "merge" }, "İkiz kart: her kolda yerinde, aynı renk (önerilen)"),
+      h("option", { value: "merge", selected: settings.collapse === "merge" }, "Tek kart: ikinci koldan renkli birleşme oku"));
+    const body = h("div", { class: "settings" },
+      h("label", { class: "note" }, "Vefat etmiş kişilerin adının yanında", h("br"), sel),
+      h("label", { class: "note" }, "Akraba evliliğindeki ortak atalar", h("br"), col));
+    const v = await openDialog("Ayarlar", body, [
       { label: "Vazgeç", value: null },
       { label: "Kaydet", value: "ok", primary: true },
     ]);
     if (v !== "ok") return;
     settings.death = sel.value;
+    settings.collapse = col.value;
     saveSettings();
     renderList();
     await renderDetail();
-    await render(true);
+    await render();
   };
   $("rel-a").onchange = (e) => {
     state.relA = e.target.value ? Number(e.target.value) : null;

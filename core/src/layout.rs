@@ -51,6 +51,8 @@ pub struct LayoutNode {
     pub shared: bool,
     /// Ortak atanın renk grubu (0, 1, 2…); arayüz her gruba ayrı renk verir
     pub shared_group: Option<u32>,
+    /// İkiz kart: aynı kişinin asıl kartının anahtarı (ikiz kart modunda)
+    pub twin_of: Option<String>,
     pub highlight: bool,
 }
 
@@ -196,11 +198,14 @@ struct Placed {
     order: f32,
     /// Hangi yarıda (kum saatinde atalar 0, torunlar 1; diğerlerinde 0)
     half: u8,
+    /// İkiz kart (aynı kişinin ikinci geçişi; açılmaz)
+    twin: bool,
 }
 
 /// Yapraklar ardışık sıra alır, iç düğüm ilk ve son çocuğunun ortasındadır (ayrık
 /// aralıkların ortaları en az 1 birim uzak: aynı kuşakta çakışma olmaz). Tekrar eden
-/// (açılmamış) çocuk yer kaplamaz; onun yerine `cross`'a bir bağ yazılır.
+/// (açılmamış) çocuk, `twins` ise kendi yerinde ikiz kart olur; değilse yer kaplamaz ve
+/// `cross`'a asıl düğüme giden bir birleşme bağı yazılır.
 #[allow(clippy::too_many_arguments)]
 fn place(
     n: &TNode,
@@ -212,18 +217,27 @@ fn place(
     out: &mut Vec<Placed>,
     edges: &mut Vec<(String, String)>,
     cross: &mut Vec<(String, i64, u8)>,
+    twins: bool,
 ) -> f32 {
     let idx = out.len();
-    out.push(Placed { key: key.clone(), person_id: n.person_id, spouse_ids: n.spouse_ids.clone(), layer, order: 0.0, half });
+    out.push(Placed {
+        key: key.clone(),
+        person_id: n.person_id,
+        spouse_ids: n.spouse_ids.clone(),
+        layer,
+        order: 0.0,
+        half,
+        twin: n.repeated,
+    });
     let mut orders = Vec::new();
     for (i, c) in n.children.iter().enumerate() {
-        if c.repeated {
+        if c.repeated && !twins {
             cross.push((key.clone(), c.person_id, half));
             continue;
         }
         let ck = format!("{key}.{i}");
         edges.push((key.clone(), ck.clone()));
-        orders.push(place(c, ck, layer + dir, dir, half, next_leaf, out, edges, cross));
+        orders.push(place(c, ck, layer + dir, dir, half, next_leaf, out, edges, cross, twins));
     }
     let order = if orders.is_empty() {
         let o = *next_leaf;
@@ -250,7 +264,7 @@ fn project(
     // Tekrar eden geçişleri aynı yarıdaki tek düğüme bağla
     let mut merges: HashSet<(String, String)> = HashSet::new();
     for (from, pid, half) in cross {
-        if let Some(t) = placed.iter().find(|p| p.person_id == pid && (p.half == half || p.layer == 0)) {
+        if let Some(t) = placed.iter().find(|p| p.person_id == pid && !p.twin && (p.half == half || p.layer == 0)) {
             merges.insert((from.clone(), t.key.clone()));
             edges.push((from, t.key.clone()));
         }
@@ -305,16 +319,40 @@ fn project(
             repeated: false,
             shared: false,
             shared_group: None,
+            twin_of: if p.twin {
+                placed
+                    .iter()
+                    .find(|q| q.person_id == p.person_id && !q.twin && (q.half == p.half || q.layer == 0))
+                    .map(|q| q.key.clone())
+            } else {
+                None
+            },
             highlight,
         });
     }
-    let mut next_group = 0;
-    for n in nodes.iter_mut() {
-        n.shared = edges.iter().filter(|(_, to)| *to == n.key).count() > 1;
-        if n.shared {
-            n.shared_group = Some(next_group);
-            next_group += 1;
+    // Ortak kişi: iki koldan bağlanan (birleşik düğüm) ya da ikiz kartı olan; aynı kişinin
+    // tüm kartları aynı renk grubunda
+    let mut group_of_person: HashMap<i64, u32> = HashMap::new();
+    for n in &nodes {
+        let multi = edges.iter().filter(|(_, to)| *to == n.key).count() > 1;
+        if (multi || n.twin_of.is_some()) && !group_of_person.contains_key(&n.person_id) {
+            let g = group_of_person.len() as u32;
+            group_of_person.insert(n.person_id, g);
         }
+    }
+    // Grup numarası ağaçtaki ilk görünüş sırasına göre (renkler kararlı olsun)
+    let mut order: Vec<(usize, i64)> = Vec::new();
+    for (i, n) in nodes.iter().enumerate() {
+        if group_of_person.contains_key(&n.person_id) && !order.iter().any(|(_, p)| *p == n.person_id) {
+            order.push((i, n.person_id));
+        }
+    }
+    for (g, (_, pid)) in order.iter().enumerate() {
+        group_of_person.insert(*pid, g as u32);
+    }
+    for n in nodes.iter_mut() {
+        n.shared_group = group_of_person.get(&n.person_id).copied();
+        n.shared = n.shared_group.is_some();
     }
     // Sol üst köşeye kenar boşluğuyla taşı
     let (mx, my, extra_w, extra_h) = match proj {
@@ -346,40 +384,41 @@ fn project(
 }
 
 /// Tek yönlü ağaç(lar) için yerleşim. `dir`: +1 atalar, -1 torunlar.
-fn layout_trees(conn: &Connection, roots: &[TNode], dir: i32, proj: Projection, highlight: bool) -> Result<TreeLayout> {
+fn layout_trees(conn: &Connection, roots: &[TNode], dir: i32, proj: Projection, highlight: bool, twins: bool) -> Result<TreeLayout> {
     let (mut placed, mut edges, mut cross) = (Vec::new(), Vec::new(), Vec::new());
     let mut next_leaf = 0.0;
     for (i, r) in roots.iter().enumerate() {
-        place(r, format!("n{i}"), 0, dir, 0, &mut next_leaf, &mut placed, &mut edges, &mut cross);
+        place(r, format!("n{i}"), 0, dir, 0, &mut next_leaf, &mut placed, &mut edges, &mut cross, twins);
     }
     project(conn, placed, edges, cross, [next_leaf, 0.0], proj, false, highlight)
 }
 
-/// Ata ağacı; `max_gen` kök dahil kuşak sayısı. Akraba evliliğindeki ortak ata tek
-/// düğümdür (`shared`), iki koldan gelen çizgiler ona bağlanır.
-pub fn ancestors_layout(conn: &Connection, root: i64, max_gen: u32, proj: Projection) -> Result<TreeLayout> {
-    layout_trees(conn, &[tree(conn, root, max_gen, true)?], 1, proj, false)
+/// Ata ağacı; `max_gen` kök dahil kuşak sayısı. Akraba evliliğindeki ortak ata `twins`
+/// ise iki kolda da yerinde (asıl kart + ikiz kart), değilse tek düğümdür ve ikinci koldan
+/// gelen çizgi (`merge`) ona bağlanır. Her iki durumda da `shared` ve renk grubu verilir.
+pub fn ancestors_layout(conn: &Connection, root: i64, max_gen: u32, proj: Projection, twins: bool) -> Result<TreeLayout> {
+    layout_trees(conn, &[tree(conn, root, max_gen, true)?], 1, proj, false, twins)
 }
 
-/// Soy ağacı; eşler düğümün yan bilgisidir. İki ebeveyni de görünümde olan çocuk tek düğümdür.
-pub fn descendants_layout(conn: &Connection, root: i64, max_gen: u32, proj: Projection) -> Result<TreeLayout> {
-    layout_trees(conn, &[tree(conn, root, max_gen, false)?], -1, proj, false)
+/// Soy ağacı; eşler düğümün yan bilgisidir. İki ebeveyni de görünümde olan çocuk ortak kişidir.
+pub fn descendants_layout(conn: &Connection, root: i64, max_gen: u32, proj: Projection, twins: bool) -> Result<TreeLayout> {
+    layout_trees(conn, &[tree(conn, root, max_gen, false)?], -1, proj, false, twins)
 }
 
 /// Kum saati: kişi ortada, ataları bir yanda, torunları öbür yanda (`gens` her iki yöne).
-pub fn hourglass_layout(conn: &Connection, root: i64, gens: u32, proj: Projection) -> Result<TreeLayout> {
+pub fn hourglass_layout(conn: &Connection, root: i64, gens: u32, proj: Projection, twins: bool) -> Result<TreeLayout> {
     let up = tree(conn, root, gens, true)?;
     let mut down = tree(conn, root, gens, false)?;
     let (mut placed, mut edges, mut cross) = (Vec::new(), Vec::new(), Vec::new());
     let mut leaves_up = 0.0;
-    place(&up, "a".into(), 0, 1, 0, &mut leaves_up, &mut placed, &mut edges, &mut cross);
+    place(&up, "a".into(), 0, 1, 0, &mut leaves_up, &mut placed, &mut edges, &mut cross, twins);
     let root_order = placed[0].order;
     // Torun yarısı: kökü atalar yarısındaki kökle aynı düğüm
     let spouse_ids = std::mem::take(&mut down.spouse_ids);
     placed[0].spouse_ids = spouse_ids;
     let (mut p2, mut e2, mut c2) = (Vec::new(), Vec::new(), Vec::new());
     let mut leaves_down = 0.0;
-    place(&down, "d".into(), 0, -1, 1, &mut leaves_down, &mut p2, &mut e2, &mut c2);
+    place(&down, "d".into(), 0, -1, 1, &mut leaves_down, &mut p2, &mut e2, &mut c2, twins);
     let shift = if proj == Projection::Radial { 0.0 } else { root_order - p2[0].order };
     let rename = |k: String| if k == "d" { "a".to_string() } else { k };
     placed.extend(p2.into_iter().skip(1).map(|mut p| {
@@ -415,7 +454,7 @@ pub fn relationship_layout(conn: &Connection, rel: &Relationship, proj: Projecti
         roots.push(TNode { person_id: ca.ancestor, role: "", spouse_ids: Vec::new(), repeated: false, children });
         tops.push(below);
     }
-    layout_trees(conn, &roots, -1, proj, true)
+    layout_trees(conn, &roots, -1, proj, true, false)
 }
 
 fn write_outline(conn: &Connection, n: &TNode, depth: usize, out: &mut String) -> Result<()> {

@@ -57,7 +57,7 @@ const Tree = {
   },
 
   apply() {
-    document.getElementById("viewport").setAttribute("transform", `translate(${this.tx},${this.ty}) scale(${this.scale})`);
+    document.getElementById("viewport").style.transform = `translate(${this.tx}px,${this.ty}px) scale(${this.scale})`;
   },
 
   fit() {
@@ -88,6 +88,7 @@ const Tree = {
     const edges = s("g", { class: "edges" });
     const nodes = s("g", { class: "nodes" });
     const merges = s("g", { class: "merges" });
+    const links = s("g", { class: "twin-links" });
     const groups = new Set(layout.nodes.filter((n) => n.shared_group !== null && n.shared_group !== undefined).map((n) => n.shared_group));
     const defs = s("defs", {},
       s("marker", { id: "arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "6", markerHeight: "6", orient: "auto-start-reverse" },
@@ -95,7 +96,9 @@ const Tree = {
       [...groups].map((g) =>
         s("marker", { id: `arrow-g${g}`, viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "5", markerHeight: "5", orient: "auto-start-reverse" },
           s("path", { d: "M0,0 L10,5 L0,10 z", style: `fill: ${groupColor(g)}` }))));
-    vp.append(defs, edges, nodes, merges);
+    vp.append(defs, edges, nodes, merges, links);
+    this.links = links;
+    this.byKey = byKey;
     // Dairesel görünümde yalnızca en dıştaki düğümlerin adı yarıçap doğrultusunda döner;
     // iç düğümlerinki yatay yazılır (aynı doğrultudaki adlar üst üste binmesin)
     const inner = new Set(layout.edges.map((e) => e.from));
@@ -119,8 +122,13 @@ const Tree = {
       if (!a || !b) continue;
       const grouped = e.group !== null && e.group !== undefined;
       const d = this.edgePath(proj, a, b, center, labelW, e.merge);
-      if (!grouped) {
-        edges.append(s("path", { class: "edge" + (e.highlight ? " highlight" : ""), d }));
+      if (!e.merge) {
+        // Ağaç çizgisi normal katmanda; ortak kişiye gidiyorsa onun renginde
+        edges.append(s("path", {
+          class: "edge" + (e.highlight ? " highlight" : "") + (grouped ? " grouped" : ""),
+          d,
+          style: grouped ? `stroke: ${groupColor(e.group)}` : null,
+        }));
         continue;
       }
       const color = groupColor(e.group);
@@ -135,16 +143,78 @@ const Tree = {
         }),
       );
     }
-    // Ortak atanın üzerine gelince ona giden yollar öne çıkar
-    for (const g of nodes.querySelectorAll(".node.shared")) {
-      const grp = g.dataset.group;
-      const set = (on) => merges.querySelectorAll(`[data-group="${grp}"]`).forEach((p) => p.classList.toggle("focus", on));
-      g.addEventListener("mouseenter", () => set(true));
-      g.addEventListener("mouseleave", () => set(false));
+    // Üzerine gelme: birleşme okları şeffaflaşır (altındaki yazı okunsun); ortak kişide
+    // aynı kişinin tüm kartları parlar, ikiz kartlar arasında geçici bağlantı belirir
+    for (const g of nodes.querySelectorAll(".node")) {
+      g.addEventListener("mouseenter", () => this.hover(g, true));
+      g.addEventListener("mouseleave", () => this.hover(g, false));
     }
     const legend = document.getElementById("legend");
-    if (legend) legend.hidden = !groups.size;
+    if (legend) {
+      const twins = layout.nodes.some((n) => n.twin_of);
+      legend.hidden = !groups.size;
+      legend.textContent = twins
+        ? "Aynı renkli kartlar aynı kişidir (akraba evliliğinde iki koldan gelen ortak ata). Kesikli çerçeveli kart ikizdir: üzerine gelince ikisi arasında bağlantı belirir, tıklayınca asıl karta gidilir."
+        : "Renkli çizgiler ortak atalara (akraba evliliği) iki koldan gelen bağlardır; kesikli olan ikinci koldur. Bir kişinin üzerine gelince oklar şeffaflaşır.";
+    }
     if (!keepView) this.fit();
+  },
+
+  hover(g, on) {
+    const vp = document.getElementById("viewport");
+    vp.classList.toggle("hovering", on);
+    const grp = g.dataset.group;
+    if (this.links) this.links.replaceChildren();
+    if (grp === undefined) return;
+    vp.querySelectorAll(`.node[data-group="${grp}"]`).forEach((x) => x.classList.toggle("glow", on));
+    vp.querySelectorAll(`.merges [data-group="${grp}"]`).forEach((x) => x.classList.toggle("focus", on));
+    if (!on || !this.layout) return;
+    // İkiz kartlarla asıl kart arasında geçici, hareketli bağlantı
+    const same = this.layout.nodes.filter((n) => String(n.shared_group) === grp);
+    const main = same.find((n) => !n.twin_of);
+    for (const t of same.filter((n) => n.twin_of)) {
+      if (!main) break;
+      const d = this.twinLinkPath(this.layout.projection, t, main);
+      this.links.append(
+        s("path", { class: "merge-casing", d }),
+        s("path", { class: "twin-link", d, style: `stroke: ${groupColor(Number(grp))}` }),
+      );
+    }
+  },
+
+  /** İkiz kartla asıl kartı, yazıların üzerinden geçmeden bağlayan kavis */
+  twinLinkPath(proj, a, b) {
+    if (proj === "Vertical") {
+      // Kartların üst kenarından, satırın üstünden kavis
+      const y1 = a.y - NODE_H / 2 - 3;
+      const y2 = b.y - NODE_H / 2 - 3;
+      const top = Math.min(y1, y2) - Math.max(36, Math.abs(a.x - b.x) * 0.12);
+      return `M${a.x},${y1} C${a.x},${top} ${b.x},${top} ${b.x},${y2}`;
+    }
+    if (proj === "Horizontal") {
+      // Noktaların solundaki boşluktan
+      const left = Math.min(a.x, b.x) - Math.max(28, Math.abs(a.y - b.y) * 0.25);
+      return `M${a.x - 8},${a.y} C${left},${a.y} ${left},${b.y} ${b.x - 8},${b.y}`;
+    }
+    // Dairesel: merkeze doğru içeriden
+    const root = this.layout.nodes.find((n) => n.depth === 0) || { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const pull = (p) => [p.x + (root.x - p.x) * 0.45, p.y + (root.y - p.y) * 0.45];
+    const [c1x, c1y] = pull(a);
+    const [c2x, c2y] = pull(b);
+    return `M${a.x},${a.y} C${c1x},${c1y} ${c2x},${c2y} ${b.x},${b.y}`;
+  },
+
+  /** Görünümü bir düğüme yumuşakça kaydırır */
+  centerOn(key) {
+    const n = this.layout && this.layout.nodes.find((x) => x.key === key);
+    if (!n) return;
+    const r = document.getElementById("svg").getBoundingClientRect();
+    this.tx = r.width / 2 - n.x * this.scale;
+    this.ty = r.height / 2 - n.y * this.scale;
+    const vp = document.getElementById("viewport");
+    vp.classList.add("panning");
+    this.apply();
+    setTimeout(() => vp.classList.remove("panning"), 450);
   },
 
   /** a → b çizgisi. `merge`: ikinci koldan ortak düğüme bağlanan kavisli çizgi. */
@@ -190,8 +260,9 @@ const Tree = {
     if (n.placeholder) cls.push("placeholder");
     if (n.highlight) cls.push("highlight");
     if (n.shared) cls.push("shared");
+    if (n.twin_of) cls.push("twin");
     if (n.person_id === this.selectedId) cls.push("selected");
-    const name = n.label + deathMark(n.alive);
+    const name = n.label + deathMark(n.alive) + (proj !== "Vertical" && n.twin_of ? " ↔" : "");
     const spouses = n.spouse_labels.join(", ");
     const sub = [n.years, spouses ? "⚭ " + spouses : ""].filter(Boolean).join("  ");
     const g = s("g", {
@@ -204,17 +275,21 @@ const Tree = {
           return;
         }
         this.onSelect && this.onSelect(n.person_id);
+        if (n.twin_of) this.centerOn(n.twin_of);
       },
       ondblclick: () => this.onOpen && this.onOpen(n.person_id),
     });
-    g.append(s("title", {}, n.shared ? `${n.label} — ortak ata: birden çok koldan bağlı (akraba evliliği)` : n.label));
+    g.append(s("title", {}, n.twin_of
+      ? `${n.label} — ikiz kart: bu kişi ağaçta başka bir kolda da var (akraba evliliği). Tıklayınca asıl karta gidilir.`
+      : n.shared ? `${n.label} — ortak ata: birden çok koldan bağlı (akraba evliliği)` : n.label));
+    const badge = n.twin_of ? "↔ diğer kolda" : "ortak ata";
     if (proj === "Vertical") {
       g.append(
         s("rect", { x: n.x - NODE_W / 2, y: n.y - NODE_H / 2, width: NODE_W, height: NODE_H, rx: 8 }),
         s("text", { class: "lbl", "data-key": n.key, x: n.x, y: n.y - 4, "text-anchor": "middle" }, clip(name, 22)),
         s("text", { class: "sub", x: n.x, y: n.y + 14, "text-anchor": "middle" }, clip(sub, 28)),
       );
-      if (n.shared) g.append(s("text", { class: "shared-badge", x: n.x + NODE_W / 2 - 6, y: n.y - NODE_H / 2 + 12, "text-anchor": "end" }, "ortak ata"));
+      if (n.shared) g.append(s("text", { class: "shared-badge", x: n.x + NODE_W / 2 - 6, y: n.y - NODE_H / 2 + 12, "text-anchor": "end" }, badge));
       return g;
     }
     g.append(s("circle", { cx: n.x, cy: n.y, r: 6 }));
