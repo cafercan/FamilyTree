@@ -137,7 +137,7 @@ async function promptBox(title, label, initial, okLabel) {
 
 // Görünüm ayarları: yalnızca bu bilgisayarda (tarayıcı deposunda) saklanır
 const SETTINGS_KEY = "familytree.ayarlar";
-const settings = { death: "cross", collapse: "twins", theme: "system", accent: "green" };
+const settings = { death: "cross", collapse: "twins", theme: "system", accent: "theme" };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {
@@ -158,8 +158,26 @@ function deathMark(alive) {
   return settings.death === "o" ? " (ö.)" : settings.death === "none" ? "" : " †";
 }
 
-/** Vurgu renkleri: [açık tema, koyu tema] */
+/** Temalar: [kimlik, ad, zemin, vurgu] — MDViewer ile aynı aile */
+const THEMES = [
+  ["system", "Sistem (açık/koyu otomatik)", "", ""],
+  ["forest-light", "Orman Açık", "#f6f7f5", "#2e7d5a"],
+  ["minimal-light", "Classic Light", "#f8fafc", "#4f46e5"],
+  ["github-light", "GitHub Light", "#ffffff", "#0969da"],
+  ["sepia-light", "Sepia (sıcak kağıt)", "#f4ecd8", "#a15c2b"],
+  ["forest-dark", "Orman Koyu", "#161a18", "#4caf84"],
+  ["slate-dark", "Obsidian Dark", "#0f172a", "#6366f1"],
+  ["nord-dark", "Nord Frost", "#2e3440", "#88c0d0"],
+];
+
+// Eski sürümün "light"/"dark" değerleri
+if (settings.theme === "light") settings.theme = "forest-light";
+if (settings.theme === "dark") settings.theme = "forest-dark";
+if (!THEMES.some((t) => t[0] === settings.theme)) settings.theme = "system";
+
+/** Vurgu renkleri: [açık tema, koyu tema]; "theme" temanın kendi rengi */
 const ACCENTS = {
+  theme: { label: "Temanın rengi" },
   green: { label: "Yeşil", light: "#2e7d5a", dark: "#4caf84" },
   blue: { label: "Mavi", light: "#2f6fd1", dark: "#6fa8ff" },
   purple: { label: "Mor", light: "#7a45c4", dark: "#b98cff" },
@@ -170,21 +188,26 @@ const ACCENTS = {
 const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
 function isDark() {
-  if (settings.theme === "dark") return true;
-  if (settings.theme === "light") return false;
-  return !!(darkQuery && darkQuery.matches);
+  if (settings.theme === "system") return !!(darkQuery && darkQuery.matches);
+  return settings.theme.endsWith("-dark");
 }
 
 /** Tema ve vurgu rengini belgeye uygular */
 function applyTheme() {
   const root = document.documentElement;
-  if (settings.theme === "light" || settings.theme === "dark") root.dataset.theme = settings.theme;
-  else delete root.dataset.theme;
-  const a = ACCENTS[settings.accent] || ACCENTS.green;
+  if (settings.theme === "system") delete root.dataset.theme;
+  else root.dataset.theme = settings.theme;
   const dark = isDark();
-  root.style.setProperty("--accent", dark ? a.dark : a.light);
-  root.style.setProperty("--accent-text", dark ? "#0d1310" : "#ffffff");
+  const a = ACCENTS[settings.accent];
+  if (a && a.light) {
+    root.style.setProperty("--accent", dark ? a.dark : a.light);
+    root.style.setProperty("--accent-text", dark ? "#0d1310" : "#ffffff");
+  } else {
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-text");
+  }
   root.style.colorScheme = dark ? "dark" : "light";
+  document.querySelectorAll(".theme-swatch").forEach((b) => b.classList.toggle("active", b.dataset.theme === settings.theme));
 }
 
 if (darkQuery) {

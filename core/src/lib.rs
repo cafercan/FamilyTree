@@ -2,6 +2,7 @@
 
 pub mod backup;
 pub mod db;
+pub mod export;
 pub mod family;
 pub mod import;
 pub mod kinship;

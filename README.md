@@ -29,8 +29,11 @@ içindeki akraba evliliklerini bulan, sonucu ağaç diyagramı olarak gösteren 
 - **Birden çok soy ağacı:** "Benim ağacım", "Eşimin ağacı" gibi birbirinden bağımsız ağaçlar
   açılabilir; içe aktarma, eşleştirme ve akrabalık hesabı yalnızca açık ağaçta çalışır.
 - **Yedekleme:** açık ağaç tek bir JSON dosyasına alınıp geri yüklenebilir.
-- **Ayarlar (⚙):** tema (sistem / açık / koyu), vurgu rengi, vefat işareti († / (ö.) / yok) ve
-  ortak ataların gösterimi.
+- **Kaydet:** açık görünüm PNG görüntü, PDF (sayfa ağacın boyutunda) ya da SVG (vektörel)
+  olarak, istenirse açık temayla kaydedilir; metin görünümü .txt olarak.
+- **Temalar (🎨):** Sistem, Orman Açık/Koyu, Classic Light, GitHub Light, Sepia, Obsidian Dark,
+  Nord Frost.
+- **Ayarlar (⚙):** tema, vurgu rengi, vefat işareti († / (ö.) / yok) ve ortak ataların gösterimi.
 
 ## Gizlilik
 

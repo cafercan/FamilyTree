@@ -402,6 +402,31 @@ function wire() {
     render();
   };
   $("btn-fit").onclick = () => Tree.fit();
+  $("btn-export-view").onclick = exportFlow;
+  // Üst çubuk tema seçicisi
+  const sw = $("theme-switch");
+  for (const [id, label, bg, ac] of THEMES) {
+    sw.append(h("button", {
+      class: "theme-swatch" + (id === "system" ? " system" : ""),
+      "data-theme": id,
+      title: label,
+      style: bg ? `--sw-bg:${bg};--sw-ac:${ac}` : "--sw-ac:transparent",
+      onclick: () => {
+        settings.theme = id;
+        saveSettings();
+        applyTheme();
+        render(true);
+      },
+    }));
+  }
+  $("btn-theme-menu").onclick = (e) => {
+    e.stopPropagation();
+    sw.classList.toggle("open");
+  };
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#theme-group")) sw.classList.remove("open");
+  });
+  applyTheme();
   $("btn-settings").onclick = async () => {
     const sel = h("select", {},
       h("option", { value: "cross", selected: settings.death === "cross" }, "† işareti"),
@@ -410,10 +435,7 @@ function wire() {
     const col = h("select", {},
       h("option", { value: "twins", selected: settings.collapse !== "merge" }, "İkiz kart: her kolda yerinde, aynı renk (önerilen)"),
       h("option", { value: "merge", selected: settings.collapse === "merge" }, "Tek kart: ikinci koldan renkli birleşme oku"));
-    const theme = h("select", {},
-      h("option", { value: "system", selected: settings.theme === "system" }, "Sistem ayarını izle"),
-      h("option", { value: "light", selected: settings.theme === "light" }, "Açık"),
-      h("option", { value: "dark", selected: settings.theme === "dark" }, "Koyu"));
+    const theme = h("select", {}, THEMES.map(([id, label]) => h("option", { value: id, selected: settings.theme === id }, label)));
     const accent = h("select", {}, Object.entries(ACCENTS).map(([k, a]) =>
       h("option", { value: k, selected: settings.accent === k }, a.label)));
     // Seçimler anında önizlenir; vazgeçilirse eski hale döner

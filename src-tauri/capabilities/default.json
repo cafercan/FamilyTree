@@ -32,6 +32,7 @@
     "allow-switch-tree",
     "allow-create-tree",
     "allow-rename-tree",
-    "allow-delete-tree"
+    "allow-delete-tree",
+    "allow-save-export"
   ]
 }

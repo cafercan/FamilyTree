@@ -281,6 +281,63 @@ async fn import_backup(app: AppHandle, state: State<'_, AppState>) -> Res<bool> 
     Ok(true)
 }
 
+/// `%XX` kodlu metni çözer (başlıklar yalnızca ASCII taşıyabilir)
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// Ağaç görünümünü dosyaya kaydeder. Gövde ham bayt (PNG, SVG, JPEG ya da metin);
+/// başlıklar: `x-kind` (png|svg|pdf|txt), `x-name` (önerilen dosya adı, %XX kodlu),
+/// PDF için `x-px-w`, `x-px-h` (JPEG piksel boyutu), `x-css-w`, `x-css-h` (ağaç boyutu).
+#[tauri::command]
+async fn save_export(app: AppHandle, request: tauri::ipc::Request<'_>) -> Res<bool> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Beklenmeyen veri biçimi".into());
+    };
+    let header = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+    let kind = header("x-kind");
+    let (ext, filter) = match kind.as_str() {
+        "png" => ("png", "PNG görüntü"),
+        "svg" => ("svg", "SVG vektör çizim"),
+        "pdf" => ("pdf", "PDF belge"),
+        "txt" => ("txt", "Metin"),
+        _ => return Err(format!("Bilinmeyen biçim: {kind}")),
+    };
+    let name = percent_decode(&header("x-name"));
+    let data = if kind == "pdf" {
+        let num = |k: &str| header(k).parse::<f32>().unwrap_or(0.0);
+        familytree_core::export::jpeg_to_pdf(bytes, num("x-px-w") as u32, num("x-px-h") as u32, num("x-css-w"), num("x-css-h"), &name)
+    } else {
+        bytes.clone()
+    };
+    let Some(file) = app
+        .dialog()
+        .file()
+        .set_title("Ağacı kaydet")
+        .set_file_name(format!("{name}.{ext}"))
+        .add_filter(filter, &[ext])
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    std::fs::write(local_path(file)?, data).map_err(err)?;
+    Ok(true)
+}
+
 /// Paketlenmiş uygulamanın CI denemesi (`--selftest`): pencere açmadan arayüz dosyaları
 /// gömülü mü bakar ve bellekteki bir veritabanında küçük bir uydurma aileyle akrabalık
 /// hesabını çalıştırır.
@@ -359,6 +416,7 @@ fn main() {
             create_tree,
             rename_tree,
             delete_tree,
+            save_export,
         ])
         .run(context)
         .expect("FamilyTree başlatılamadı");

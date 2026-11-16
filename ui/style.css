@@ -27,9 +27,9 @@
   --g5: #5a8f1c;
 }
 
-/* Koyu tema: sistem koyuysa (ayarlarda "Açık" seçilmediyse) ya da ayarlarda "Koyu" seçildiyse */
+/* Koyu taban: "Sistem" seçiliyken işletim sistemi koyuysa ya da koyu bir tema seçildiyse */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme]) {
     color-scheme: dark;
     --bg: #161a18;
     --panel: #1f2421;
@@ -58,7 +58,7 @@
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme$="-dark"] {
   color-scheme: dark;
   --bg: #161a18;
   --panel: #1f2421;
@@ -84,6 +84,34 @@
   --g3: #f07ab8;
   --g4: #6fa8ff;
   --g5: #9fd45a;
+}
+
+/* MDViewer ile aynı tema ailesi: taban açık/koyu değişkenlerin üzerine yazar */
+:root[data-theme="minimal-light"] {
+  --bg: #f8fafc; --panel: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0;
+  --accent: #4f46e5; --accent-text: #ffffff; --edge: #cbd5e1;
+}
+:root[data-theme="github-light"] {
+  --bg: #ffffff; --panel: #f6f8fa; --text: #1f2328; --muted: #57606a; --line: #d0d7de;
+  --accent: #0969da; --accent-text: #ffffff; --edge: #afb8c1;
+}
+:root[data-theme="sepia-light"] {
+  --bg: #f4ecd8; --panel: #faf4e5; --text: #4b3f2f; --muted: #7d6e55; --line: #e0d3b5;
+  --accent: #a15c2b; --accent-text: #fffaf0; --edge: #c8b796;
+  --male: #e3e6d7; --male-line: #5f7a8c; --female: #f0dccf; --female-line: #a2574b;
+  --unknown: #ece3cf; --unknown-line: #9a8c72; --warn-bg: #f1e2bd; --warn-text: #7a5300;
+}
+:root[data-theme="slate-dark"] {
+  --bg: #080c14; --panel: #0f172a; --text: #f8fafc; --muted: #94a3b8; --line: #1e293b;
+  --accent: #6366f1; --accent-text: #ffffff; --edge: #334155;
+  --male: #16233d; --male-line: #7aa7dd; --female: #3a1f33; --female-line: #e08aa6;
+  --unknown: #1e2533; --unknown-line: #8a94a6;
+}
+:root[data-theme="nord-dark"] {
+  --bg: #2e3440; --panel: #3b4252; --text: #eceff4; --muted: #a3acbd; --line: #4c566a;
+  --accent: #88c0d0; --accent-text: #2e3440; --edge: #616e88;
+  --male: #3b4a5e; --male-line: #81a1c1; --female: #4c3a48; --female-line: #b48ead;
+  --unknown: #434c5e; --unknown-line: #9aa3b5; --warn-bg: #4a4232; --warn-text: #ebcb8b; --danger: #bf616a;
 }
 
 * { box-sizing: border-box; }
@@ -318,3 +346,44 @@ dialog pre { max-height: 50vh; overflow: auto; font-size: 11px; background: var(
 .toast.error { background: var(--danger); color: #fff; }
 
 dialog .settings { display: flex; flex-direction: column; gap: 12px; min-width: 360px; }
+
+/* Üst çubuk tema seçicisi (MDViewer'daki gibi) */
+.theme-group { position: relative; }
+.theme-switch {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.theme-switch.open { display: flex; align-items: center; }
+.theme-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sw-bg);
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.theme-swatch::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--sw-ac);
+  opacity: 0.9;
+}
+.theme-swatch.system { background: linear-gradient(135deg, #f6f7f5 50%, #161a18 50%); }
+.theme-swatch:hover { transform: scale(1.12); border-color: var(--line); }
+.theme-swatch.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.export-options { display: flex; flex-direction: column; gap: 8px; min-width: 340px; }
+.export-options label { display: flex; gap: 8px; align-items: center; }
