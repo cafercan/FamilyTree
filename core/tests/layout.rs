@@ -45,7 +45,7 @@ fn assert_no_overlap(l: &TreeLayout) {
 fn no_overlap_in_ancestors() {
     let c = db_with(&["ornek-ali.pdf"]);
     let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical, false).unwrap();
-    assert_eq!(l.nodes.len(), 12, "Emre + 2 + 4 + 7, ortak atalar (Rıza, Hatice) birer kez");
+    assert_eq!(l.nodes.len(), 13, "Emre + 2 + 4 + 8 (Neriman'ın annesi ana adından), ortak atalar birer kez");
     for a in &l.nodes {
         for b in &l.nodes {
             if a.key != b.key && (a.y - b.y).abs() < 0.01 {
@@ -59,7 +59,7 @@ fn no_overlap_in_ancestors() {
     let mehmet = node(&l, find(&c, "MEHMET", "YILMAZ"))[0];
     let fatma = node(&l, find(&c, "NURTEN", "YILMAZ"))[0];
     assert!(mehmet.y < ali.y && mehmet.x < fatma.x);
-    assert_eq!(l.edges.len(), 13, "her ebeveyn bağı bir çizgi");
+    assert_eq!(l.edges.len(), 14, "her ebeveyn bağı bir çizgi");
 }
 
 /// Akraba evliliğindeki ortak ata tek düğümdür; iki koldan gelen çizgiler ona bağlanır.
@@ -230,9 +230,9 @@ fn horizontal_rows_leave_room_for_spouse_line() {
 fn twin_cards_instead_of_merge_lines() {
     let c = db_with(&["ornek-ali.pdf"]);
     let l = ancestors_layout(&c, find(&c, "EMRE", "YILMAZ"), 4, Projection::Vertical, true).unwrap();
-    assert_eq!(l.nodes.len(), 14, "ortak atalar iki kolda da yerinde");
+    assert_eq!(l.nodes.len(), 15, "ortak atalar iki kolda da yerinde");
     assert!(l.edges.iter().all(|e| !e.merge), "birleşme çizgisi yok");
-    assert_eq!(l.edges.len(), 13);
+    assert_eq!(l.edges.len(), 14);
     let riza = node(&l, find(&c, "RIZA", ""));
     assert_eq!(riza.len(), 2);
     let main: Vec<_> = riza.iter().filter(|n| n.twin_of.is_none()).collect();

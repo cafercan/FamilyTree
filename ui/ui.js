@@ -137,7 +137,7 @@ async function promptBox(title, label, initial, okLabel) {
 
 // Görünüm ayarları: yalnızca bu bilgisayarda (tarayıcı deposunda) saklanır
 const SETTINGS_KEY = "familytree.ayarlar";
-const settings = { death: "cross", collapse: "twins", theme: "system", accent: "theme" };
+const settings = { death: "cross", collapse: "twins", theme: "system", accent: "theme", gens: 8 };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {

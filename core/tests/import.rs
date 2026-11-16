@@ -66,7 +66,11 @@ fn import_ali_creates_people_and_links() {
     let fatma = find(&c, "NURTEN", "YILMAZ");
     assert_eq!(parents(&c, ali).unwrap(), (Some(mehmet), Some(fatma)));
     let defne = find(&c, "DEFNE", "YILMAZ");
-    assert_eq!(parents(&c, defne).unwrap(), (Some(ali), None));
+    let (df, dm) = parents(&c, defne).unwrap();
+    assert_eq!(df, Some(ali));
+    // Annesinin satırı yok; ana adından ("SELİN") yer tutucu eklendi
+    let selin = get_person(&c, dm.unwrap()).unwrap();
+    assert!(selin.placeholder && selin.info.given_name == "SELİN");
     let ahmet = find(&c, "RIZA", "");
     assert_eq!(db::children(&c, ahmet).unwrap().len(), 2, "Kadir ve Elif");
     // Soyadı "-" boş kaydedilir, ölüm bilgisi okunur
@@ -191,9 +195,8 @@ fn gap_filled_by_later_pdf_merges_placeholder() {
     let c = db();
     let ayse: Vec<_> = expected("ornek-ayse-kuzen").into_iter().filter(|r| r.relation != "Annesinin Babası").collect();
     import_records(&c, &ayse);
-    let ph: Vec<_> = list_persons(&c).unwrap().into_iter().filter(|p| p.placeholder).collect();
-    assert_eq!(ph.len(), 1);
-    assert_eq!(ph[0].info.given_name, "OSMAN");
+    let ph: Vec<_> = list_persons(&c).unwrap().into_iter().filter(|p| p.placeholder && p.info.given_name == "OSMAN").collect();
+    assert_eq!(ph.len(), 1, "boşluktaki OSMAN yer tutucu");
     let s = import_records(&c, &expected("ornek-ali"));
     assert!(s.conflicts.is_empty(), "{:?}", s.conflicts);
     let osmans: Vec<_> = list_persons(&c).unwrap().into_iter().filter(|p| p.info.given_name == "OSMAN").collect();
@@ -231,4 +234,34 @@ fn manual_edit_on_root_then_reimport_no_duplicate() {
     update_person_manual(&c, id, &info).unwrap();
     let s = import(&c, "ornek-ayse-kuzen.pdf");
     assert_eq!((s.created, list_persons(&c).unwrap().len()), (0, before));
+}
+
+/// Baba/ana adından eklenen yer tutucu, sonra gelen bir PDF'teki gerçek satırla birleşir.
+#[test]
+fn name_placeholder_merges_with_later_real_row() {
+    let c = db();
+    let s = import(&c, "ornek-ali.pdf");
+    assert!(s.parents_from_names >= 10, "en üst kuşağın ebeveynleri adlardan eklenir: {}", s.parents_from_names);
+    let riza = find(&c, "RIZA", "");
+    let omer = db::parents(&c, riza).unwrap().0.unwrap();
+    assert!(get_person(&c, omer).unwrap().placeholder);
+    let before = list_persons(&c).unwrap().len();
+    // Aynı PDF'e Rıza'nın babasının gerçek satırı eklenmiş hali
+    let mut recs = expected("ornek-ali");
+    let mut omer_row = recs[0].clone();
+    omer_row.row_no = 16;
+    omer_row.relation = "Babasının Babasının Babasının Babası".into();
+    omer_row.given_name = "ÖMER".into();
+    omer_row.father_name = "HÜSNÜ".into();
+    omer_row.mother_name = "ZÜLEYHA".into();
+    omer_row.birth_date = "01/07/1870".into();
+    recs.push(omer_row);
+    let s2 = import_records(&c, &recs);
+    assert!(s2.conflicts.is_empty(), "{:?}", s2.conflicts);
+    let omers: Vec<_> = list_persons(&c).unwrap().into_iter().filter(|p| p.info.given_name == "ÖMER").collect();
+    assert_eq!(omers.len(), 1, "yer tutucu gerçek kişiyle birleşti");
+    assert!(!omers[0].placeholder);
+    assert_eq!(omers[0].info.birth_date, "01/07/1870");
+    // Ömer'in anne-babası adlardan eklendi; başka yeni kişi yok
+    assert_eq!(list_persons(&c).unwrap().len(), before + 2);
 }

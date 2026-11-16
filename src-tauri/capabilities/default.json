@@ -33,6 +33,7 @@
     "allow-create-tree",
     "allow-rename-tree",
     "allow-delete-tree",
-    "allow-save-export"
+    "allow-save-export",
+    "allow-complete-top-parents"
   ]
 }

@@ -56,6 +56,8 @@ pub struct ImportSummary {
     pub merged: usize,
     pub links_added: usize,
     pub conflicts: Vec<String>,
+    /// En üst kuşağa baba/ana adından eklenen yer tutucu kişi sayısı
+    pub parents_from_names: usize,
 }
 
 pub fn preview_import(conn: &Connection, file_name: &str, pdf_bytes: &[u8]) -> Result<ImportPreview> {
@@ -139,8 +141,13 @@ pub fn preview_records(conn: &Connection, file_name: &str, records: &[Record]) -
                 Some(_) => {}
                 None => {
                     let p = db::get_person(conn, existing)?;
-                    // Yer tutucunun bilgisi yok: bağlam tek başına yeterli
-                    let base = if node.record.is_none() { 90 } else { score(&PersonInput::from(node.record.as_ref().expect("kayıt")), &p.info, &p.manual_fields).map(|s| s.0).unwrap_or(0) };
+                    // Yer tutucunun bilgisi yok (ya da yalnız adı var): bağlam tek başına yeterli
+                    let name_ok = |r: &Record| p.info.given_name.is_empty() || tr_fold(&p.info.given_name) == tr_fold(&r.given_name);
+                    let base = match &node.record {
+                        None => 90,
+                        Some(r) if p.placeholder && name_ok(r) => 70,
+                        Some(r) => score(&PersonInput::from(r), &p.info, &p.manual_fields).map(|s| s.0).unwrap_or(0),
+                    };
                     if node.record.is_none() || base >= 40 {
                         node.candidates.push(Candidate {
                             person_id: existing,
@@ -391,6 +398,8 @@ pub fn commit_import(conn: &Connection, preview: &ImportPreview, decisions: &[Im
         db::set_spouse(&tx, x, y)?;
         summary.links_added += 1;
     }
+    // En üst kuşak: baba/ana adı bilinen ama satırı olmayan ebeveynleri ekle
+    summary.parents_from_names = crate::family::complete_top_parents(&tx)?;
     tx.commit()?;
     Ok(summary)
 }

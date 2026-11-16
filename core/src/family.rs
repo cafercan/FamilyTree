@@ -74,6 +74,61 @@ fn persons(conn: &Connection, ids: impl IntoIterator<Item = i64>) -> Result<Vec<
 }
 
 /// Kişi, anne-babası, çocukları, eşleri, kardeşleri ve hangi PDF'lerde geçtiği.
+/// En üst kuşağı tamamlar: ebeveyni kayıtlı olmayan ama baba/ana adı bilinen kişilere
+/// bu adlarla yer tutucu ebeveyn ekler. Aynı baba ve ana adına ve aynı haneye (cilt-hane)
+/// sahip kardeşler aynı yer tutucu ebeveynleri paylaşır. Eklenen kişi sayısını döndürür.
+pub fn complete_top_parents(conn: &Connection) -> Result<usize> {
+    use crate::tr_fold;
+    use std::collections::HashMap;
+    // Hane: cilt-hane (birey no hariç) + kayıt yeri
+    let household = |p: &PersonInput| {
+        let reg: Vec<&str> = p.register_no.split('-').collect();
+        let ch = if reg.len() >= 2 { format!("{}-{}", reg[0].trim(), reg[1].trim()) } else { String::new() };
+        format!("{ch}|{}", tr_fold(&p.province_district))
+    };
+    let key = |p: &PersonInput, role: Sex| {
+        let (name, other) = if role == Sex::Male { (&p.father_name, &p.mother_name) } else { (&p.mother_name, &p.father_name) };
+        (role, tr_fold(name), tr_fold(other), household(p))
+    };
+    let tx = db::Atomic::begin(conn)?;
+    let persons: Vec<Person> = db::list_persons(&tx)?.into_iter().filter(|p| !p.placeholder).collect();
+    // Daha önce eklenmiş yer tutucu ebeveynleri kardeşler için yeniden kullan
+    let mut made: HashMap<(Sex, String, String, String), i64> = HashMap::new();
+    for p in &persons {
+        let (f, m) = db::parents(&tx, p.id)?;
+        for (role, parent) in [(Sex::Male, f), (Sex::Female, m)] {
+            if let Some(x) = parent {
+                if db::get_person(&tx, x)?.placeholder {
+                    made.entry(key(&p.info, role)).or_insert(x);
+                }
+            }
+        }
+    }
+    let mut created = 0;
+    for p in &persons {
+        let (f, m) = db::parents(&tx, p.id)?;
+        for (role, have, name) in [(Sex::Male, f, &p.info.father_name), (Sex::Female, m, &p.info.mother_name)] {
+            if have.is_some() || name.trim().is_empty() || name.trim() == "-" {
+                continue;
+            }
+            let k = key(&p.info, role);
+            let id = match made.get(&k) {
+                Some(id) => *id,
+                None => {
+                    let input = PersonInput { given_name: name.trim().to_string(), sex: Some(role), ..Default::default() };
+                    let id = db::insert_placeholder(&tx, &input)?;
+                    created += 1;
+                    made.insert(k, id);
+                    id
+                }
+            };
+            db::set_parent(&tx, p.id, id, role, "pdf")?;
+        }
+    }
+    tx.commit()?;
+    Ok(created)
+}
+
 pub fn person_detail(conn: &Connection, id: i64) -> Result<PersonDetail> {
     let person = db::get_person(conn, id)?;
     let (f, m) = db::parents(conn, id)?;
@@ -174,6 +229,37 @@ mod tests {
         assert_eq!(d.siblings.iter().map(|x| x.id).collect::<Vec<_>>(), vec![s]);
         assert_eq!(d.children.len(), 1);
         assert!(d.sources.is_empty());
+    }
+
+    #[test]
+    fn complete_top_parents_from_names() {
+        let c = db();
+        let rec = |n: &str, s: Sex, f: &str, m: &str, reg: &str| PersonInput {
+            given_name: n.into(), sex: Some(s), father_name: f.into(), mother_name: m.into(),
+            register_no: reg.into(), province_district: "Çankırı/Ilgaz/KUZUÖREN KÖYÜ".into(), ..Default::default()
+        };
+        // İki kardeş (aynı baba/ana adı, aynı cilt-hane) ve ilgisiz biri
+        let a = db::insert_person(&c, &rec("RIZA", Sex::Male, "ÖMER", "ŞERİFE", "3-17-2"), false).unwrap();
+        let b = db::insert_person(&c, &rec("ZÜHAL", Sex::Female, "ÖMER", "ŞERİFE", "3-17-5"), false).unwrap();
+        let x = db::insert_person(&c, &rec("SALİH", Sex::Male, "ÖMER", "HAVVA", "9-1-1"), false).unwrap();
+        // Babası kayıtlı ama annesi olmayan kişi: yalnız anne eklenir
+        let kid = db::insert_person(&c, &rec("KADİR", Sex::Male, "RIZA", "NERİMAN", "3-40-1"), false).unwrap();
+        db::set_parent(&c, kid, a, Sex::Male, "pdf").unwrap();
+        // Adı bilinmeyen: eklenmez
+        db::insert_person(&c, &rec("YALNIZ", Sex::Male, "", "", ""), false).unwrap();
+
+        assert_eq!(complete_top_parents(&c).unwrap(), 2 + 2 + 1, "kardeşlere ortak 2, Salih'e 2, Kadir'e anne");
+        let (fa, ma) = db::parents(&c, a).unwrap();
+        assert_eq!(db::parents(&c, b).unwrap(), (fa, ma), "kardeşler aynı ebeveynleri paylaşır");
+        let father = db::get_person(&c, fa.unwrap()).unwrap();
+        assert!(father.placeholder);
+        assert_eq!((father.info.given_name.as_str(), father.info.sex), ("ÖMER", Some(Sex::Male)));
+        assert_eq!(db::get_person(&c, ma.unwrap()).unwrap().info.given_name, "ŞERİFE");
+        let (fx, _) = db::parents(&c, x).unwrap();
+        assert_ne!(fx, fa, "aynı adlı ama başka hanedeki baba ayrı kişi");
+        assert_eq!(db::get_person(&c, db::parents(&c, kid).unwrap().1.unwrap()).unwrap().info.given_name, "NERİMAN");
+        // Yeniden çalıştırmak bir şey eklemez
+        assert_eq!(complete_top_parents(&c).unwrap(), 0);
     }
 
     /// PDF'te eş satırı olmasa da ortak çocuğu olan kişi eş olarak görünür.

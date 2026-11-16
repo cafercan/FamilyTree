@@ -138,6 +138,7 @@ async function importFlow() {
   }));
   const sum = await call("commit_import", { preview, decisions });
   const parts = [`${sum.created} yeni kişi`, `${sum.merged} kişi birleştirildi`, `${sum.links_added} yeni bağ`];
+  if (sum.parents_from_names) parts.push(`en üst kuşağa baba/ana adından ${sum.parents_from_names} kişi`);
   if (sum.conflicts.length) {
     await openDialog("İçe aktarıldı — bazı bağlar eklenemedi",
       h("div", {}, h("p", {}, parts.join(", ") + "."),

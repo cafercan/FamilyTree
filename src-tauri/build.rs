@@ -30,6 +30,7 @@ const COMMANDS: &[&str] = &[
     "rename_tree",
     "delete_tree",
     "save_export",
+    "complete_top_parents",
 ];
 
 fn main() {

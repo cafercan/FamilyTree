@@ -7,7 +7,7 @@ const state = {
   selected: null,
   tab: "ancestors",
   view: "Vertical",
-  gens: 4,
+  gens: 8,
   relA: null,
   relB: null,
   search: "",
@@ -51,6 +51,16 @@ async function treeMenu() {
         }
       },
     }, "Yeniden adlandır"),
+    " ",
+    h("button", {
+      title: "PDF'te satırı olmayan ama baba/ana adı bilinen en üst kuşak kişilerini ekler",
+      onclick: async () => {
+        document.getElementById("dlg").close();
+        const n = await call("complete_top_parents");
+        toast(n ? `${n} kişi baba/ana adlarından eklendi` : "Eklenecek kişi bulunamadı");
+        if (n) await refresh(true);
+      },
+    }, "Baba/ana adlarından en üst kuşağı tamamla"),
     others.length ? h("h3", {}, "Diğer ağaçlar") : null,
     h("ul", {}, others.map((n) => h("li", {}, n, " ",
       h("button", {
@@ -462,8 +472,13 @@ function wire() {
       render();
     };
   }
+  // Kuşak sayısı: 2-15, son seçim hatırlanır
+  state.gens = Math.min(15, Math.max(2, Number(settings.gens) || 8));
+  for (let g = 2; g <= 15; g++) $("gens").append(h("option", { value: String(g), selected: g === state.gens }, String(g)));
   $("gens").onchange = (e) => {
     state.gens = Number(e.target.value);
+    settings.gens = state.gens;
+    saveSettings();
     render();
   };
   $("btn-fit").onclick = () => Tree.fit();

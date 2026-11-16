@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-complete-top-parents"
+description = "Enables the complete_top_parents command without any pre-configured scope."
+commands.allow = ["complete_top_parents"]
+
+[[permission]]
+identifier = "deny-complete-top-parents"
+description = "Denies the complete_top_parents command without any pre-configured scope."
+commands.deny = ["complete_top_parents"]
