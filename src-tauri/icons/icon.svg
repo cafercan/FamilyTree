@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#34a37a"/>
+      <stop offset="0.55" stop-color="#1d6f57"/>
+      <stop offset="1" stop-color="#0f3f35"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.28" cy="0.14" r="0.75">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gold" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#ffe7a3"/>
+      <stop offset="1" stop-color="#e9a826"/>
+    </radialGradient>
+    <radialGradient id="blue" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#d6ebff"/>
+      <stop offset="1" stop-color="#5d9ee8"/>
+    </radialGradient>
+    <radialGradient id="rose" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#ffe0ea"/>
+      <stop offset="1" stop-color="#e2729a"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#062a22" flood-opacity="0.45"/>
+    </filter>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <clipPath id="tile"><rect x="64" y="64" width="896" height="896" rx="200"/></clipPath>
+  </defs>
+
+  <!-- Zemin -->
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <!-- Yelpaze halkaları (dairesel görünüm) -->
+    <g fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="26">
+      <circle cx="512" cy="760" r="250"/>
+      <circle cx="512" cy="760" r="470"/>
+      <circle cx="512" cy="760" r="690"/>
+    </g>
+    <rect x="64" y="64" width="896" height="896" fill="url(#shine)"/>
+  </g>
+
+  <!-- Dallar -->
+  <g fill="none" stroke="#f6f2e4" stroke-width="26" stroke-linecap="round" filter="url(#shadow)">
+    <path d="M512 742 C512 640 352 640 352 548"/>
+    <path d="M512 742 C512 640 672 640 672 548"/>
+    <path d="M352 548 C352 440 246 450 246 352"/>
+    <path d="M352 548 C352 440 420 420 420 318"/>
+    <path d="M672 548 C672 440 604 420 604 318"/>
+    <path d="M672 548 C672 440 778 450 778 352"/>
+  </g>
+
+  <!-- Ortak ata bağı (akraba evliliği) -->
+  <path d="M420 300 C440 214 584 214 604 300" fill="none" stroke="#ffd36e" stroke-width="14"
+        stroke-linecap="round" stroke-dasharray="2 30"/>
+
+  <!-- Kişiler -->
+  <g stroke="#ffffff" stroke-width="12" filter="url(#shadow)">
+    <circle cx="246" cy="344" r="46" fill="url(#blue)"/>
+    <circle cx="420" cy="308" r="46" fill="url(#rose)"/>
+    <circle cx="604" cy="308" r="46" fill="url(#blue)"/>
+    <circle cx="778" cy="344" r="46" fill="url(#rose)"/>
+    <circle cx="352" cy="540" r="56" fill="url(#blue)"/>
+    <circle cx="672" cy="540" r="56" fill="url(#rose)"/>
+  </g>
+  <!-- Sen: altın düğüm, hafif parıltı -->
+  <circle cx="512" cy="752" r="86" fill="#ffd36e" opacity="0.55" filter="url(#glow)"/>
+  <circle cx="512" cy="752" r="70" fill="url(#gold)" stroke="#ffffff" stroke-width="14" filter="url(#shadow)"/>
+</svg>

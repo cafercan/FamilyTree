@@ -45,6 +45,8 @@ for pair in "32:32x32.png" "128:128x128.png" "256:128x128@2x.png" "512:icon.png"
     install -d "$d"
     install -m 644 "$ROOT/src-tauri/icons/$file" "$d/$PKG.png"
 done
+install -d "$STAGE/usr/share/icons/hicolor/scalable/apps"
+install -m 644 "$ROOT/src-tauri/icons/icon.svg" "$STAGE/usr/share/icons/hicolor/scalable/apps/$PKG.svg"
 install -m 644 "$ROOT/LICENSE" "$STAGE/usr/share/doc/$PKG/copyright"
 
 SIZE_KB="$(du -sk "$STAGE/usr" | cut -f1)"

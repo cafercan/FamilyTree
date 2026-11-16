@@ -1,4 +1,6 @@
-# FamilyTree
+<p align="center"><img src="src-tauri/icons/icon.png" alt="FamilyTree" width="112"></p>
+
+<h1 align="center">FamilyTree</h1>
 
 e-Devlet'ten alınan **Alt-Üst Soy Bilgisi** PDF'lerini tamamen yerel bir veritabanında
 birleştiren, eksik akrabaları elle eklemeye izin veren, iki kişi arasındaki akrabalığı ve aile
