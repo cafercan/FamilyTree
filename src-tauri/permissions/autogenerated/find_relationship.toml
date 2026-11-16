@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-find-relationship"
+description = "Enables the find_relationship command without any pre-configured scope."
+commands.allow = ["find_relationship"]
+
+[[permission]]
+identifier = "deny-find-relationship"
+description = "Denies the find_relationship command without any pre-configured scope."
+commands.deny = ["find_relationship"]

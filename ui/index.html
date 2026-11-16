@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FamilyTree</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">FamilyTree</div>
+    <div class="tree-bar">
+      <select id="tree-select" title="Açık soy ağacı"></select>
+      <button id="btn-tree-new" title="Yeni, boş bir soy ağacı aç">Yeni</button>
+      <button id="btn-tree-more" title="Ağacı yeniden adlandır ya da başka bir ağacı sil">⋯</button>
+    </div>
+    <div class="actions">
+      <button id="btn-import" class="primary">PDF içe aktar</button>
+      <button id="btn-add">Kişi ekle</button>
+    </div>
+    <input id="search" type="search" placeholder="Kişi ara…" autocomplete="off">
+    <ul id="person-list" class="person-list"></ul>
+    <section id="dup-section" class="side-section" hidden>
+      <h3>Olası aynı kişiler</h3>
+      <ul id="dup-list"></ul>
+    </section>
+    <button id="btn-consang" class="consang" hidden></button>
+    <div class="backup">
+      <button id="btn-export">Yedek al</button>
+      <button id="btn-restore">Yedekten yükle</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <div class="tabs" role="tablist">
+        <button data-tab="ancestors" class="active">Ata ağacı</button>
+        <button data-tab="descendants">Soy ağacı</button>
+        <button data-tab="both" title="Atalar ve torunlar birlikte">Ata + Soy</button>
+        <button data-tab="relation">Akrabalık</button>
+      </div>
+      <div class="views">
+        <button data-view="Vertical" class="active" title="Dikey kutulu ağaç">Dikey</button>
+        <button data-view="Horizontal" title="Yatay ağaç">Yatay</button>
+        <button data-view="Radial" title="Dairesel (yelpaze)">Dairesel</button>
+        <button data-view="Text" title="Girintili metin">Metin</button>
+      </div>
+      <label class="gens">Kuşak
+        <select id="gens">
+          <option>2</option><option>3</option><option selected>4</option><option>5</option>
+          <option>6</option><option>7</option><option>8</option>
+        </select>
+      </label>
+      <button id="btn-fit" title="Ağacı pencereye sığdır">Sığdır</button>
+      <button id="btn-settings" title="Ayarlar">⚙</button>
+    </div>
+
+    <div id="relation-bar" class="relation-bar" hidden>
+      <select id="rel-a"></select>
+      <span>ile</span>
+      <select id="rel-b"></select>
+      <strong id="rel-label"></strong>
+    </div>
+
+    <div id="canvas" class="canvas">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg"><g id="viewport"></g></svg>
+      <pre id="text-view" class="text-view" hidden></pre>
+      <div id="legend" class="legend" hidden>Renkli çizgiler ortak atalara (akraba evliliği) iki koldan gelen bağlardır; kesikli olan ikinci koldur. Ortak atanın üzerine gelince yolları vurgulanır.</div>
+      <div id="empty" class="empty" hidden>
+        <h2>Soy ağacınızı ekleyin</h2>
+        <ol>
+          <li>e-Devlet'te <b>Alt-Üst Soy Bilgisi Sorgulama</b> hizmetini açın.</li>
+          <li>Sonucu tarayıcının <b>Yazdır</b> menüsünden <b>PDF olarak kaydet</b>in.</li>
+          <li>Burada <b>PDF içe aktar</b>a basıp dosyayı seçin.</li>
+        </ol>
+        <p>Kuzenlerinizin ve diğer akrabalarınızın PDF'lerini de ekleyebilirsiniz; ortak kişiler
+          birleştirilir. Tüm bilgiler yalnızca bu bilgisayarda saklanır.</p>
+      </div>
+    </div>
+
+    <section id="detail" class="detail" hidden></section>
+  </main>
+
+  <dialog id="dlg"></dialog>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="ui.js"></script>
+  <script src="tree.js"></script>
+  <script src="dialogs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

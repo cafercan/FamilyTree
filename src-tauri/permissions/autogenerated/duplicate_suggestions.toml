@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-duplicate-suggestions"
+description = "Enables the duplicate_suggestions command without any pre-configured scope."
+commands.allow = ["duplicate_suggestions"]
+
+[[permission]]
+identifier = "deny-duplicate-suggestions"
+description = "Denies the duplicate_suggestions command without any pre-configured scope."
+commands.deny = ["duplicate_suggestions"]

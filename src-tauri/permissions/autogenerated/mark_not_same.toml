@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mark-not-same"
+description = "Enables the mark_not_same command without any pre-configured scope."
+commands.allow = ["mark_not_same"]
+
+[[permission]]
+identifier = "deny-mark-not-same"
+description = "Denies the mark_not_same command without any pre-configured scope."
+commands.deny = ["mark_not_same"]

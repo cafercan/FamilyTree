@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-remove-parent"
+description = "Enables the remove_parent command without any pre-configured scope."
+commands.allow = ["remove_parent"]
+
+[[permission]]
+identifier = "deny-remove-parent"
+description = "Denies the remove_parent command without any pre-configured scope."
+commands.deny = ["remove_parent"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-consanguinity-report"
+description = "Enables the consanguinity_report command without any pre-configured scope."
+commands.allow = ["consanguinity_report"]
+
+[[permission]]
+identifier = "deny-consanguinity-report"
+description = "Denies the consanguinity_report command without any pre-configured scope."
+commands.deny = ["consanguinity_report"]

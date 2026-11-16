@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pick-and-preview-pdf"
+description = "Enables the pick_and_preview_pdf command without any pre-configured scope."
+commands.allow = ["pick_and_preview_pdf"]
+
+[[permission]]
+identifier = "deny-pick-and-preview-pdf"
+description = "Denies the pick_and_preview_pdf command without any pre-configured scope."
+commands.deny = ["pick_and_preview_pdf"]

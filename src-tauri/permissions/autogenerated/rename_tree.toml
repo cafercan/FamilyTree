@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-rename-tree"
+description = "Enables the rename_tree command without any pre-configured scope."
+commands.allow = ["rename_tree"]
+
+[[permission]]
+identifier = "deny-rename-tree"
+description = "Denies the rename_tree command without any pre-configured scope."
+commands.deny = ["rename_tree"]

@@ -1,0 +1,15 @@
+# Kişisel veri asla repoya girmez: gerçek PDF, veritabanı ve yedekler
+*.[pP][dD][fF]
+!tests/fixtures/*.pdf
+*.[dD][bB]
+*.sqlite*
+*.db-journal
+familytree-yedek*.json
+
+# Araç ve derleme çıktıları
+.claude/
+.superpowers/
+target/
+node_modules/
+dist/
+src-tauri/gen/

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-remove-spouse"
+description = "Enables the remove_spouse command without any pre-configured scope."
+commands.allow = ["remove_spouse"]
+
+[[permission]]
+identifier = "deny-remove-spouse"
+description = "Denies the remove_spouse command without any pre-configured scope."
+commands.deny = ["remove_spouse"]

@@ -1,0 +1,20 @@
+[package]
+name = "familytree-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "FamilyTree çekirdeği: e-Devlet soy ağacı PDF ayrıştırma, veritabanı ve akrabalık hesabı"
+
+[lib]
+name = "familytree_core"
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+rusqlite = { version = "0.43.0", features = ["bundled"] }
+pdf-extract = "0.12.1"
+
+[dev-dependencies]
+printpdf = { version = "0.12.9", default-features = false }
+tempfile = "3.27.0"

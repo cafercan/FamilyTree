@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-spouse"
+description = "Enables the set_spouse command without any pre-configured scope."
+commands.allow = ["set_spouse"]
+
+[[permission]]
+identifier = "deny-set-spouse"
+description = "Denies the set_spouse command without any pre-configured scope."
+commands.deny = ["set_spouse"]
