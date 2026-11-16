@@ -1,61 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0" stop-color="#34a37a"/>
-      <stop offset="0.55" stop-color="#1d6f57"/>
-      <stop offset="1" stop-color="#0f3f35"/>
-    </linearGradient>
-    <radialGradient id="shine" cx="0.28" cy="0.14" r="0.75">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="gold" cx="0.38" cy="0.32" r="0.75">
-      <stop offset="0" stop-color="#ffe7a3"/>
-      <stop offset="1" stop-color="#e9a826"/>
-    </radialGradient>
-    <radialGradient id="blue" cx="0.38" cy="0.32" r="0.75">
-      <stop offset="0" stop-color="#d6ebff"/>
-      <stop offset="1" stop-color="#5d9ee8"/>
-    </radialGradient>
-    <radialGradient id="rose" cx="0.38" cy="0.32" r="0.75">
-      <stop offset="0" stop-color="#ffe0ea"/>
-      <stop offset="1" stop-color="#e2729a"/>
-    </radialGradient>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#062a22" flood-opacity="0.45"/>
-    </filter>
-    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="22"/>
-    </filter>
-    <clipPath id="tile"><rect x="64" y="64" width="896" height="896" rx="200"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#3a4a8c"/><stop offset="1" stop-color="#141a3a"/></linearGradient>
   </defs>
-
-  <!-- Zemin -->
   <rect x="24" y="24" width="976" height="976" rx="200" fill="url(#bg)"/>
-  <g clip-path="url(#tile)">
-    <rect x="64" y="64" width="896" height="896" fill="url(#shine)"/>
+  <g fill="none" stroke="#e8ecff" stroke-width="44" stroke-linecap="round">
+    <path d="M512 520 C512 420 330 420 330 330"/><path d="M512 520 C512 420 694 420 694 330"/>
+    <path d="M330 330 C330 260 230 250 230 190"/><path d="M330 330 C330 260 430 250 430 190"/>
+    <path d="M694 330 C694 260 594 250 594 190"/><path d="M694 330 C694 260 794 250 794 190"/>
+    <path d="M512 520 C512 620 360 620 360 740"/><path d="M512 520 C512 620 664 620 664 740"/>
   </g>
-
-  <!-- Dallar -->
-  <g fill="none" stroke="#f6f2e4" stroke-width="40" stroke-linecap="round">
-    <path d="M512 742 C512 640 352 640 352 548"/>
-    <path d="M512 742 C512 640 672 640 672 548"/>
-    <path d="M352 548 C352 440 246 450 246 352"/>
-    <path d="M352 548 C352 440 420 420 420 318"/>
-    <path d="M672 548 C672 440 604 420 604 318"/>
-    <path d="M672 548 C672 440 778 450 778 352"/>
+  <g stroke="#ffffff" stroke-width="18">
+    <circle cx="230" cy="190" r="62" fill="#7fb3f5"/><circle cx="430" cy="190" r="62" fill="#f29bb9"/>
+    <circle cx="594" cy="190" r="62" fill="#7fb3f5"/><circle cx="794" cy="190" r="62" fill="#f29bb9"/>
+    <circle cx="330" cy="330" r="72" fill="#7fb3f5"/><circle cx="694" cy="330" r="72" fill="#f29bb9"/>
+    <circle cx="360" cy="760" r="72" fill="#9fe0c4"/><circle cx="664" cy="760" r="72" fill="#9fe0c4"/>
+    <circle cx="512" cy="520" r="96" fill="#f6c453"/>
   </g>
-
-  <!-- Kişiler -->
-  <g stroke="#ffffff" stroke-width="16">
-    <circle cx="246" cy="344" r="62" fill="url(#blue)"/>
-    <circle cx="420" cy="308" r="62" fill="url(#rose)"/>
-    <circle cx="604" cy="308" r="62" fill="url(#blue)"/>
-    <circle cx="778" cy="344" r="62" fill="url(#rose)"/>
-    <circle cx="352" cy="540" r="72" fill="url(#blue)"/>
-    <circle cx="672" cy="540" r="72" fill="url(#rose)"/>
-  </g>
-  <!-- Sen: altın düğüm, hafif parıltı -->
-  
-  <circle cx="512" cy="752" r="88" fill="url(#gold)" stroke="#ffffff" stroke-width="16"/>
 </svg>

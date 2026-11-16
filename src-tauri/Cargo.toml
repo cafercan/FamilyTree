@@ -1,6 +1,6 @@
 [package]
 name = "familytree"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "FamilyTree: e-Devlet soy ağacı PDF'lerinden yerel aile ağacı ve akrabalık bulucu"
